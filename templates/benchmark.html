@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+
+
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{% static 'fixed-table.css' %}">
+    <script src="{% static 'fixed-table.js' %}"></script>
+
+<script>
+
+    $( document ).ready(function() {
+
+        let fixedTable1 = fixTable(document.getElementById('fixed-table-container-1'));
+        let fixedTable2 = fixTable(document.getElementById('fixed-table-container-2'));
+
+    });
+
+</script>
+
+{% endblock %}
+
+
+{% block content %}
+<h1 class="text-center pt-4"> Content Extraction Benchmark </h1>
+<br><br>
+
+<h4 class="mt-3"> Compare Performance </h4>
+<div>
+    <table class="table">
+        <tr>
+            <td>
+                Choose the <b>DATASET</b> to use for the experiment
+            </td>
+            <td>
+                <select style="width: 150px">
+                    <option  selected disabled>Choose here</option>
+                    <option value="1">Default Data</option>
+                    <option value="2">Customized Data</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Choose the <b>TOOL</b> you want to benchmark
+            </td>
+            <td>
+                <select style="width: 150px">
+                    <option  selected disabled>Choose here</option>
+                    <option value="1">Firefox Reader Mode</option>
+                    <option value="2">Safari Reader Mode</option>
+                    <option value="3">CPE</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <a href="/performance">Compare Start</a>
+            </td>
+            <td>
+
+            </td>
+        </tr>
+    </table>
+</div>
+
+<br><br>
+
+<h4>Default Experiment Data Set</h4>
+<div id="fixed-table-container-1" class="fixed-table-container" style="width: 100%">
+    <table class="table">
+        <thead align="left">
+        <tr>
+            <th scope="col">Page Number</th>
+            <th scope="col">Site Name</th>
+            <th scope="col">Site Description</th>
+            <th scope="col">Page Url</th></tr>
+        </thead>
+        <tbody>
+        {% for page in pages %}
+            <tr>
+{#                <th scope="row">{{ page.page_number }}</th>#}
+                <td>{{ page.page_number }}</td>
+                <td>{{ page.site_name }}</td>
+                <td> {{ page.site_description }}</td>
+                <td> <a href="{{ page.page_url}}">{{ page.page_url}}</a> </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h4>Customized Experiment Data Set</h4>
+<div id="fixed-table-container-2" class="fixed-table-container" style="width: 100%" >
+    <table class="table">
+        <thead align="left">
+        <tr><th>Page Number</th><th>Site Name</th><th>Site Description</th><th>Page Url</th></tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
