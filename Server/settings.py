@@ -53,7 +53,9 @@ INSTALLED_APPS = [
     'User.apps.UserConfig',
     'rest_framework',
     'rest_framework.authtoken',
-    'corsheaders'
+    'corsheaders',
+
+    'oauth2_provider',
 ]
 
 REST_FRAMEWORK = {
@@ -71,12 +73,13 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'Server.urls'
@@ -158,3 +161,5 @@ TEMPLATE_DIRS = (os.path.join(BASE_DIR, '/templates'),)
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+CORS_ORIGIN_ALLOW_ALL = True

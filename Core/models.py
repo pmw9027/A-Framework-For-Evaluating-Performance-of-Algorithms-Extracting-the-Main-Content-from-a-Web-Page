@@ -15,6 +15,7 @@ class Page(models.Model):
     site_description = models.TextField()
     menu_xpath = models.TextField(default=None, null=True)
     menu_amount = models.IntegerField(default=None, null=True)
+    test = models.BooleanField(default=False, null=False)
     mht_file = models.TextField(default=None, null=True)
 
 

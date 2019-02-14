@@ -20,6 +20,10 @@ from User import views as UserViews
 from PerformanceEvaluator import views as PerformanceEvaluatorViews
 from rest_framework import routers
 from django.views.generic import TemplateView
+from AccountManager.views import ApiEndpoint
+
+
+from AnswerSetManager.views import MyView
 
 router = routers.DefaultRouter()
 router.register(r'sites', CoreViews.SiteViewSet)
@@ -31,14 +35,22 @@ router.register(r'users', UserViews.UserViewSet)
 router.register(r'groups', UserViews.GroupViewSet)
 
 urlpatterns = [
-    url(r'^$', TemplateView.as_view(template_name='home.html')),
-    url(r'^router', include(router.urls)),
-    url(r'^api_auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^admin/', admin.site.urls),
+    url(r'^answers/', include('AnswerSetManager.urls', namespace='answer_set_manager')),
 
+    url(r'^admin/', admin.site.urls),
+    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+    url(r'^accounts/', include('django.contrib.auth.urls')),
+
+    url(r'^api/hello', ApiEndpoint.as_view()),  # an example resource endpoint
+
+    url(r'^$', TemplateView.as_view(template_name='home.html')),
     url(r'^calculations/', PerformanceEvaluatorViews.calculations),
     url(r'^benchmark/', CoreViews.mainPage, name='benchmark'),
     url(r'^performance/', CoreViews.performancePage),
     url(r'^performance_detail/', CoreViews.performanceDetailPage),
-    url(r'^accounts/', include('django.contrib.auth.urls')),
+
+    url(r'^api_auth/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^router', include(router.urls)),
+
+
 ]
