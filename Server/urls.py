@@ -21,9 +21,8 @@ from PerformanceEvaluator import views as PerformanceEvaluatorViews
 from rest_framework import routers
 from django.views.generic import TemplateView
 from AccountManager.views import ApiEndpoint
+from User.views import UserList, UserDetails, GroupList
 
-
-from AnswerSetManager.views import MyView
 
 router = routers.DefaultRouter()
 router.register(r'sites', CoreViews.SiteViewSet)
@@ -34,11 +33,20 @@ router.register(r'performances', PerformanceEvaluatorViews.PerformanceViewSet)
 router.register(r'users', UserViews.UserViewSet)
 router.register(r'groups', UserViews.GroupViewSet)
 
+admin.autodiscover()
+
 urlpatterns = [
+    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+    url(r'^admin/', admin.site.urls),
+
+    url(r'^users/', UserList.as_view()),
+    url(r'^users/<pk>/', UserDetails.as_view()),
+    url(r'^groups/', GroupList.as_view()),
+
     url(r'^answers/', include('AnswerSetManager.urls', namespace='answer_set_manager')),
 
-    url(r'^admin/', admin.site.urls),
-    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+
+
     url(r'^accounts/', include('django.contrib.auth.urls')),
 
     url(r'^api/hello', ApiEndpoint.as_view()),  # an example resource endpoint
