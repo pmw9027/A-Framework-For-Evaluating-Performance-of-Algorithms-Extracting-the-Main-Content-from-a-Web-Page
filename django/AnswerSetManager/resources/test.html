@@ -1,0 +1,100 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Content Extraction Framework</title>
+</head>
+
+<style>
+    table {
+        width: 100%;
+    }
+    td{
+        padding-left: 15px;
+    }
+    table, th, td {
+        border: 1px solid #bcbcbc;
+    }
+    li{
+        display: inline;
+        margin-right:10px;
+    }
+    p{
+        display: inline;
+        margin-left: 10px;
+        color: blue;
+        font-weight: bold;
+        visibility: hidden;
+    }
+
+
+</style>
+
+
+<body>
+
+<h2> Content Extraction Evaluation Framework </h2>
+<h4> Test Page 입니다. </h4>
+
+<div>
+    <li> 성능 계산 : <button> Run </button></li>
+    <p> COMPLETE ! </p>
+</div>
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.min.js"></script>
+<script>
+
+
+{#    $.ajax({#}
+{#        type: "GET",#}
+{#        url: "/predicts",#}
+{#    }).fail(function () {#}
+{#        alert('실패!!');#}
+{#    }).done(function (data, status, xhr) {#}
+{#        console.log(data);#}
+{#    });#}
+
+
+
+    let formData_Predict = new FormData();
+    formData_Predict.append('predict_number', 1);
+    formData_Predict.append('page_number', '/pages/1/');
+    formData_Predict.append('predict_method', 'CPE');
+    formData_Predict.append('predict_dom', '');
+    formData_Predict.append('predict_area_left', '1');
+    formData_Predict.append('predict_area_right', '500');
+    formData_Predict.append('predict_area_top', '1');
+    formData_Predict.append('predict_area_bottom', '500');
+
+
+    $(document).ready(function(){
+        $("button").click(function() {
+            // Xml Http Request 객체 이용하여 ajax 전송
+            let xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+                if (xhr.status === 200 || xhr.status === 201) {
+                    console.log(xhr.responseText);
+                } else {
+                    console.error(xhr.responseText);
+                }
+            };
+
+            xhr.open('POST', 'http://localhost:8000/predicts/');
+{#            xhr.open('GET', 'http://localhost:8000/predicts/1/');#}
+{#            xhr.open('PUT', 'http://localhost:8000/predicts/2/');#}
+{#            xhr.open('DELETE', 'http://localhost:8000/predicts/2/', true, 'ehmoon', '*ansdmsghks9184');#}
+
+            xhr.send(formData_Predict);
+
+        });
+   });
+
+</script>
+
+</body>
+</html>
+
+
