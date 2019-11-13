@@ -1,0 +1,60 @@
+{
+  "manifest_version": 2,
+  "name": "DBLab Tools",
+  "version": "1.0",
+  "description": "HanYang University DB LAB Crawler",
+
+  "author": "Minwoo Park",
+  "homepage_url": "http://db.hayang.ac.kr",
+  "icons": {
+    "16": "icons/icon.png",
+    "48": "icons/icon.png",
+    "128": "icons/icon.png"
+  },
+  "web_accessible_resources": [],
+
+  "browser_action": {
+    "default_icon": "icons/icon.png",
+    "default_popup": "scripts-popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "modules/jquery-3.2.0.min.js",
+        "modules/jquery.highlight.js",
+        "modules/communication.es6",
+        "scripts-content/Node.es6"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "scripts": [
+      "modules/jquery-3.2.0.min.js",
+      "modules/communication.es6",
+      "scripts-background/system.js",
+      "scripts-background/background.es6"
+    ],
+    "persistent": true
+  },
+  "content_security_policy": "script-src 'self' https://code.jquery.com https://cdnjs.cloudflare.com https://stackpath.bootstrapcdn.com; object-src 'self'"
+  ,
+  "permissions": [
+    "webRequest",
+    "cookies",
+    "<all_urls>",
+    "tabs",
+    "sessions",
+    "storage",
+    "downloads",
+    "downloads.open",
+    "alarms",
+    "pageCapture",
+    "fileSystem",
+    "identity",
+    "notifications"
+  ]
+}
