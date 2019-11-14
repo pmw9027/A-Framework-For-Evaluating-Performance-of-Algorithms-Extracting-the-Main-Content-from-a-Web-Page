@@ -2,6 +2,54 @@ let _DEBUG_MODE = false;
 
 _DEBUG_MODE ? _debug(0, "Background script started") : false;
 
+
+class Job {
+    constructor() {
+
+        this._tabs = []
+        this._id = Job.id++;
+        chrome.tabs.create(
+            {
+                active:false
+            }, 
+            tab => {
+
+                this._tabs.push(new Tab(tab.id));
+
+            });
+    }
+
+    get id(){
+        return this._id;
+    }
+
+
+    get tabs() {
+
+        return this._tabs;
+    }
+
+}
+Job.id = 1;
+
+class Tab {
+    constructor(tab_id) {
+        this._id = tab_id;
+        this._status = 'init'
+
+    }
+
+    get status() {
+
+        return this._status;
+    }
+
+    get tab() {
+
+        return this._id;
+    }
+}
+
 class Account{
     constructor(_username) {
 
@@ -43,7 +91,6 @@ class Page {
         this._url = null;
         this._downloadId = null;
     }
-
 
     get downloadId() {
         return this._downloadId;
@@ -91,8 +138,61 @@ chrome.runtime.onMessage.addListener(
         let t_data = JSON.stringify(request.data);
         let _data;
         let _res;
-
+        let job;
+        let tab;
         switch(request.code) {
+
+            case Communication.JOB_CREATION():
+
+                job = new Job();
+                SYSTEM.jobs.push(job);
+                
+                sendResponse({
+                    data:{
+                        job_id: job.id
+                    }
+                })
+
+                break;
+            case Communication.CRAWL_SITE():
+                
+                job = SYSTEM.jobs.find(el => el.id == request.data.job_id);
+
+                if (typeof job == 'undefined') {
+
+                    console.log("Error 1");
+                    break;
+                }
+                tab = job.tabs.find(el => el.status == 'init')
+
+                if (typeof tab == 'undefined') {
+
+                    console.log("Error 2");
+                    break;
+
+                }
+
+                console.log(tab);
+                console.log(tab.id);
+
+                chrome.tabs.update(tab.id, {url: request.data.site['protocol']+"://" + request.data.site['domain']});
+
+                break;
+            case Communication.TEST_SET_SITE():
+                    ajax_request("/answer_set_manager/test-set/"+request.data['test_set_id'], "GET", null,"json",
+                    xhr => {
+                        xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
+
+                    },
+                    data => {
+                        let _data = data['data'];
+                        sendResponse({
+                            data: _data
+                        });
+                    },
+                    null
+                );
+                break;
             case Communication.STATUS():
                     ajax_request("/answer_set_manager/answer-set", "GET", null,"json",
                     xhr => {
@@ -113,6 +213,7 @@ chrome.runtime.onMessage.addListener(
                             answer_set: SYSTEM.answer_sets,
                             page:SYSTEM.CurPage,
                             check_mode:true
+                            
                         };
                         sendResponse({code:Communication.STATUS(), data: _data});
                     },
@@ -154,52 +255,6 @@ chrome.runtime.onMessage.addListener(
                         });
                     });
                 });
-
-                break;
-            case Communication.CRAWL():
-            
-                    ajax_request("/answer_set_manager/answer-set/"+request.data['test_set_id'], "GET", null,"json",
-                    xhr => {
-                        xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
-
-                    },
-                    data => {
-                        console.log(data);
-                        data.data.forEach( elem => {
-
-                            console.log('${elem}')
-
-                            chrome.tabs.update(tab.id, {url: "://" + DownloadItem[0].filename});
-
-
-                        });
-                        // let page = this.pages.pop();
-                        // let tab = this.tabs[0];
-                
-                        // if (page.downloadId == null){
-                        //     chrome.downloads.download({
-                        //         url: "http://" + SYSTEM.host + ":" + SYSTEM.port + "/answer_set_manager/pages/" + page.pk,
-                        //         filename: "hyu/" + page.pk + ".mhtml"
-                        //     }, downloadId => {
-                        //         page.downloadId = downloadId;
-                        //         chrome.downloads.onChanged.addListener(downloadDelta => {
-                        //             if (downloadDelta.state && downloadDelta.state.current === 'complete' && downloadDelta.id === downloadId) {
-                        //                 chrome.downloads.search({id: page.downloadId}, DownloadItem => {
-                
-                
-                        //                     tab.page_id = page.pk;
-                        //                     chrome.tabs.update(tab.id, {url: "file://" + DownloadItem[0].filename});
-                
-                        //                 });
-                        //             }
-                        //         });
-                        //     });
-                        // }
-
-                        sendResponse({code:Communication.STATUS(), data: _data});
-                    },
-                    null
-                    );
 
                 break;
             case Communication.JOIN():

@@ -25,71 +25,24 @@ class Communication {
 
     static REQUEST_RESOURCE()       {   return 501; }
 
-    static CRAWL()          {   return 601; }
+    static JOB_CREATION()          {   return 801; }
+
+    static CRAWL_SITE()          {   return 601; }
+
+    static TEST_SET_SITE() {return 701;}
 
 
     sendToBackground(_code,_data, callback) {
-
         _DEBUG_MODE ? _debug(0, "Message is sent to BackgroundScript (code:"+_code+")") : false;
-
-
         chrome.runtime.sendMessage({code:_code, data:_data}, function(response) {
-
             _DEBUG_MODE ? _debug(0, "Message is received from BackgroundScript\n"+JSON.stringify(response)) : false;
-
             if(response !== undefined) {
-                switch(response.code) {
-                    case Communication.LOGOUT():
-                        callback();
-                        break;
-                    case Communication.LOGIN():
-                        callback();
-                        break;
-                    case Communication.STATUS():
-
-                        callback(response.data);
-                        break;
-                    case Communication.PREVIOUSPAGE():
-
-                        callback();
-                        break;
-                    case Communication.NEXTPAGE():
-
-                        callback();
-                        break;
-                    case Communication.SENDING:
-                        if(_code) {
-
-
-                        }
-                        else {
-
-
-                        }
-                        break;
-                    case Communication.REQUEST_RESOURCE():
-
-                        callback(response.data);
-                        break;
-                    case Communication.GETLIST():
-
-                        callback(response.pages);
-                        break;
-                }
+                callback(response.data);
             }
             else {
-
                 _DEBUG_MODE ? _debug(0, "Error") : false;
-
             }
-
-
-            // chrome.runtime.sendMessage({todo: Communication.STATUS(), }, function(response) {
-            //
-            //
-            // });
         });
-
     }
 
     sendToContent (_code,_data, callback) {

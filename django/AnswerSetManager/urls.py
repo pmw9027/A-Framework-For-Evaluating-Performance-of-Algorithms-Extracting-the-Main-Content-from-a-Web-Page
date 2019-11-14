@@ -27,6 +27,6 @@ urlpatterns = [
     path('answers/', AnswerPage.as_view(), name="test"),
 
     path('answer-set', AnswerSetAPIView.as_view(), name="test"),
-    path('answer-set/<int:test_set_id>', AnswerSetAPIView.as_view()),
+    path('test-set/<int:test_set_id>', AnswerSetAPIView.as_view()),
 
 ]

@@ -17,7 +17,6 @@ class AnswerSetAPIView(APIView):
         if test_set_id:
             test_set_sites = TestSetSite.objects.filter(test_set_id=test_set_id).select_related('site')
 
-
             return JsonResponse({
                 'code': 0,
                 'data': [{**model_to_dict(a, exclude=['test_set', 'site']), **model_to_dict(a.site)} for a in test_set_sites]

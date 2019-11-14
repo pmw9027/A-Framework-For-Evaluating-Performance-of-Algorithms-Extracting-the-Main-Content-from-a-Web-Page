@@ -6,12 +6,12 @@ from django.contrib.auth.models import User
 
 class Site(models.Model):
     id = models.AutoField(primary_key=True)
-    protocol = models.CharField(max_length=255, null=False)
+    protocol = models.CharField(max_length=255, null=False, default='https')
     domain = models.CharField(max_length=255, null=False)
-    name = models.CharField(max_length=255, null=False)
+    name = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.name if self.name else self.domain
 
 
 class AnswerSet(models.Model):

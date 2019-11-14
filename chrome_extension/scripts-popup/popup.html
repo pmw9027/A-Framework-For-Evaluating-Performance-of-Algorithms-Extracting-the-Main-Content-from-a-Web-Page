@@ -85,7 +85,7 @@
                 <div class="input-group-prepend">
                     <label class="input-group-text" for="inputGroupSelect01">Test Set</label>
                 </div>
-                <select id="answer-set-selector" class="custom-select" id="inputGroupSelect01">
+                <select id="test-set-selector" class="custom-select" id="inputGroupSelect01">
                     <option selected>Choose...</option>
                 </select>
                 <div>
@@ -95,9 +95,16 @@
             <div class="mt-1 mb-1 progress">
                 <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
+            <div class="row mt-1 mb-1 container-fluid btn-group align-middle" role="group" aria-label="Basic example">
+                <div class="col progress-current-count">0</div>
+                <div class="col">/</div>
+                <div class="col progress-total-count">0</div>
+                <div class="col progress-percent">0</div>
+                <div class="col">%</div>
+            </div>
         </div>
 
-        <div id="container-curation" class="container-fluid ">
+        <div id="container-curation" class="container-fluid d-none">
             <form>
                 <div class="input-group input-group-sm mb-1">
                     <div class="input-group-prepend">
@@ -138,6 +145,7 @@
             <div class="mt-1 mb-1 progress">
                 <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
+
         </div>
 
         <div id="container-evaluation" class="container-fluid d-none">

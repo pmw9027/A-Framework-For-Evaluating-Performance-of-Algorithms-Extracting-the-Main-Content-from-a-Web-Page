@@ -24,7 +24,7 @@ function display(data) {
         $("#container-nav").removeClass("d-none")
         $("#containver-user").removeClass("d-none")
 
-        let selector = $("#answer-set-selector");
+        let selector = $("#test-set-selector");
         selector.empty();
         data.answer_set.forEach(data => {
             var option = $('<option value='+data._pk+'>'+data._name+'</option>');
@@ -103,10 +103,19 @@ window.onload = function() {
     });
     $(".save-page").on("click", function() {
 
-
         communication.sendToBackground(Communication.SAVE_PAGE(),null, update);
 
+    });
 
+    $("#test-set-selector").change(event => {
+        let _data = {
+            "test_set_id": $(event.target).find(":selected").val()
+        }
+        communication.sendToBackground(Communication.TEST_SET_SITE(),_data, data => {
+
+            $(".test-set-site-toltal-count").text(data.length);
+
+        });
     });
 
     $('#nav-crawl, #nav-curation, #nav-evaluation, #nav-extraction').click(function(){
@@ -137,10 +146,43 @@ window.onload = function() {
         }
     });
     $('#button-start-crawling').click((event) => {
-        let selector = $("#answer-set-selector > option:selected");
-        event.target.text = 'stop'
+        let selector = $("#test-set-selector > option:selected");
+        $(event.target).text('stop');
+        communication.sendToBackground(Communication.TEST_SET_SITE(),{test_set_id: selector.val()}, data => {
+            $(".progress-total-count").text(data.length);
 
-        // communication.sendToBackground(Communication.CRAWL(),{test_set_id: selector.val()}, update);
+            let sites = data;
+
+            communication.sendToBackground(Communication.JOB_CREATION(), null, data => {
+                
+                new Promise(resolve => {
+                    sites.forEach((elem, index) => {
+
+                        console.log(elem);
+
+                        communication.sendToBackground(Communication.CRAWL_SITE(), {
+                            job_id: data.job_id,
+                            site: elem
+                        
+                        }, data => {
+    
+                            resolve(data);
+                        });
+                    })
+                }).then(data=>{
+    
+                    $(".progress-current-count").text(index+1);
+                    let value = (index+1) / data.length * 100
+                    $(".progress-percent").text(value);
+                    $(".progress-bar").attr("aria-valuenow", value);
+                    $(".progress-bar").width(value+'%');
+                    
+                });
+            
+            
+            });
+            
+        });
     });
 };
 

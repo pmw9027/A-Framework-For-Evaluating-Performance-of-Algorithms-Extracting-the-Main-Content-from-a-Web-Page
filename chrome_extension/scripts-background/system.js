@@ -17,6 +17,7 @@ class System{
         this._answer_sets = [];
         this._cur_page_index = 0;
 
+        this._jobs = []
       
     }
 
@@ -24,6 +25,12 @@ class System{
 
         console.log(this._resourcedoc);
         return this._resourcedoc;
+    }
+
+    get jobs() {
+
+
+        return this._jobs;
     }
 
     intialize() {
