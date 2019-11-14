@@ -136,9 +136,11 @@ window.onload = function() {
 
         }
     });
-    $('#button-start-crawling').click( () => {
+    $('#button-start-crawling').click((event) => {
         let selector = $("#answer-set-selector > option:selected");
-        communication.sendToBackground(Communication.CRAWL(),{test_set_id: selector.val()}, update);
+        event.target.text = 'stop'
+
+        // communication.sendToBackground(Communication.CRAWL(),{test_set_id: selector.val()}, update);
     });
 };
 
