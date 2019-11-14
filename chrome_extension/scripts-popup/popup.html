@@ -28,18 +28,18 @@
         <div id="container-sign" class="container-fluid">
             <div class="input-group input-group-sm mb-1">
                 <div class="input-group-prepend">
-                    <span class="input-group-text" id="basic-addon1">ID</span>
+                    <span class="text-center input-group-text" style="width: 40px;" id="basic-addon1">ID</span>
                 </div>
                 <input name='username' type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="basic-addon1">
             </div>
             <div class="input-group input-group-sm mb-1">
                 <div class="input-group-prepend">
-                    <span class="input-group-text" id="basic-addon2">PW</span>
+                    <span class="input-group-text text-center" style="width: 40px;" id='basic-addon2'>PW</span>
                 </div>
                 <input name='password' type="password" class="form-control" placeholder="Password" aria-label="Password" aria-describedby="basic-addon2">
             </div>
             <div class="btn-toolbar justify-content-between align-middle mt-1 mb-3" role="toolbar" aria-label="Toolbar with button groups">
-                <div class="btn-group" role="group" aria-label="First group">
+                <div class="btn-group mx-auto" role="group" aria-label="First group">
                   <button id="login-button" type="button" class="btn btn-primary">Sign in</button>
                   <button id="join-button" type="button" class="btn btn-secondary">Sign up</button>
                 </div>
@@ -97,11 +97,19 @@
             </div>
         </div>
 
-        <div id="container-curation" class="container-fluid d-none">
-            <div class="mt-1 mb-1 container-fluid btn-group" role="group" aria-label="Basic example">
+        <div id="container-curation" class="container-fluid ">
+            <form>
+                <div class="input-group input-group-sm mb-1">
+                    <div class="input-group-prepend">
+                        <span class="text-center input-group-text" style="width: 40px;" id="basic-addon1">ID</span>
+                    </div>
+                    <input name='username' type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="basic-addon1">
+                </div>
+            </form>
+            <div class="mt-1 mb-1 container-fluid btn-group align-middle" role="group" aria-label="Basic example">
                 <button type="button" class="btn btn-secondary">Left</button>
                 <span class="ml-4">0</span>
-                <span class="align-middle">/</span>
+                <span class="text-center">/</span>
                 <span class="mr-4">0</span>
                 <button type="button" class="btn btn-secondary">Right</button>
             </div>
