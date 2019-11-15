@@ -17,20 +17,82 @@ class Job {
                 this._tabs.push(new Tab(tab.id));
 
             });
+        
+            this._tasks = [];
+
     }
+
 
     get id(){
         return this._id;
     }
 
-
     get tabs() {
-
         return this._tabs;
     }
 
+    get tasks() {
+        return this._tasks;
+    }
+
+    run() {
+
+        let _tab = null;
+        let task = null;
+        while(1) {
+            
+            _tab = this.tabs.find(el => el.status == 'init' || el.status == 'done')
+
+            if (!_tab) {
+                setTimeout(function () {
+                }, 1000);
+                
+                continue;
+            }
+            _tab.status = 'running'
+
+
+            if (this._tasks.length == 0) {
+                break;
+            }
+
+            task = this._tasks.pop();
+
+            chrome.tabs.update(_tab.id, {url: task.protocol+"://" + task.domain}, tab => {
+                console.log(tab);
+
+                chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+                    console.log(tab);
+
+                    if (tabId == tab.id && changeInfo.status == 'complete') {
+                        let _tab = this.tabs.find(el => el.id == tabId);
+                        console.log(_tab);
+                        _tab.status = 'done'
+                        
+                    }
+                });
+            });
+        }
+    }
 }
 Job.id = 1;
+
+class Task {
+    constructor(protocol, domain) {
+        this._protocol = protocol;
+        this._domain = domain;
+    }
+
+    get protocol() {
+
+        return this._protocol;
+    }
+
+    get domain() {
+
+        return this._domain;
+    }
+}
 
 class Tab {
     constructor(tab_id) {
@@ -46,6 +108,15 @@ class Tab {
 
     get tab() {
 
+        return this._id;
+    }
+
+    set status(status) {
+
+        this._status = status;
+    }
+
+    get id(){
         return this._id;
     }
 }
@@ -130,7 +201,7 @@ _DEBUG_MODE ? _debug(0, "Global valuables are initialed") : false;
 
 
 chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
+    (request, sender, sendResponse) => {
 
         let _from = sender.tab ? "script" : "extension";
         _DEBUG_MODE ? _debug(0, "Message is received from "+ _from + "(code:"+request.code+")\n"+JSON.stringify(request.data)) : false;
@@ -140,8 +211,8 @@ chrome.runtime.onMessage.addListener(
         let _res;
         let job;
         let tab;
+        
         switch(request.code) {
-
             case Communication.JOB_CREATION():
 
                 job = new Job();
@@ -159,24 +230,32 @@ chrome.runtime.onMessage.addListener(
                 job = SYSTEM.jobs.find(el => el.id == request.data.job_id);
 
                 if (typeof job == 'undefined') {
-
                     console.log("Error 1");
-                    break;
-                }
-                tab = job.tabs.find(el => el.status == 'init')
-
-                if (typeof tab == 'undefined') {
-
-                    console.log("Error 2");
-                    break;
-
+                    // break;
                 }
 
-                console.log(tab);
-                console.log(tab.id);
+                ajax_request("/answer_set_manager/test-set/"+request.data['test_set_id'], "GET", null,"json",
+                    xhr => {
+                        xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
 
-                chrome.tabs.update(tab.id, {url: request.data.site['protocol']+"://" + request.data.site['domain']});
+                    },
+                    data => {
+                        let _data = data['data'];
+                        
+                        _data.forEach(elem => {
 
+                            job.tasks.push(new Task(elem.protocol, elem.domain));
+                            
+                        });
+
+                        job.run();
+                        
+                        sendResponse({
+                            data: _data
+                        });
+                    },
+                    null
+                );
                 break;
             case Communication.TEST_SET_SITE():
                     ajax_request("/answer_set_manager/test-set/"+request.data['test_set_id'], "GET", null,"json",
@@ -266,8 +345,10 @@ chrome.runtime.onMessage.addListener(
                 break;
             case Communication.ISLOGIN():
 
-                break;
 
+
+                sendResponse({});
+                break;
             // Login
             case Communication.LOGIN():
                 _DEBUG_MODE ? _debug(0, "Message is sent to Server (code:"+Communication.LOGIN()+")\n"+JSON.stringify(request.data)) : false;
@@ -325,6 +406,7 @@ chrome.runtime.onMessage.addListener(
     });
 
 
+
 function _debug(_code, _message) {
 
     let _date = new Date();
@@ -339,7 +421,6 @@ function isLogin(account) {
         url: "http://" + SYSTEM.host + ":"+SYSTEM.port+"/accounts/api/account",
         method: "GET",
         crossDomain: true,
-        // contentType: "application/json; charset=utf-8",
         dataType: "json",
         async: false,
         xhrFields: { withCredentials: true },

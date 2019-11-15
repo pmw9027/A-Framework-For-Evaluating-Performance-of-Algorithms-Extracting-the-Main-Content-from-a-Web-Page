@@ -154,34 +154,15 @@ window.onload = function() {
             let sites = data;
 
             communication.sendToBackground(Communication.JOB_CREATION(), null, data => {
-                
-                new Promise(resolve => {
-                    sites.forEach((elem, index) => {
+                communication.sendToBackground(Communication.CRAWL_SITE(), {
+                    job_id: data.job_id,
+                    test_set_id: selector.val()
+                }, data => {
 
-                        console.log(elem);
+                    // resolve(data);
 
-                        communication.sendToBackground(Communication.CRAWL_SITE(), {
-                            job_id: data.job_id,
-                            site: elem
-                        
-                        }, data => {
-    
-                            resolve(data);
-                        });
-                    })
-                }).then(data=>{
-    
-                    $(".progress-current-count").text(index+1);
-                    let value = (index+1) / data.length * 100
-                    $(".progress-percent").text(value);
-                    $(".progress-bar").attr("aria-valuenow", value);
-                    $(".progress-bar").width(value+'%');
-                    
                 });
-            
-            
             });
-            
         });
     });
 };
