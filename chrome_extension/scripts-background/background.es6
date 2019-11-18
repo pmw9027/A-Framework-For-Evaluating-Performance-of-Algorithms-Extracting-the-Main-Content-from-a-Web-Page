@@ -6,7 +6,7 @@ _DEBUG_MODE ? _debug(0, "Background script started") : false;
 class Job {
     constructor() {
 
-        this._tabs = []
+        this._tabs = [];
         this._id = Job.id++;
         chrome.tabs.create(
             {
@@ -17,8 +17,54 @@ class Job {
                 this._tabs.push(new Tab(tab.id));
 
             });
-        
-            this._tasks = [];
+
+        chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+            let _tab = this._tabs.find(el => el.id == tab.id);
+
+            if (_tab && changeInfo.status == 'complete') {
+
+                clearTimeout(_tab.timeout);
+                chrome.pageCapture.saveAsMHTML({tabId:_tab.id}, mhtmlData => {
+                    const reader = new FileReader();
+                    reader.addEventListener('loadend', (e) => {
+                        const text = e.srcElement.result;
+                        let _data = {
+                            'id': _tab.task.id,
+                            'url': tab.url,
+                            'title': tab.title
+                        };
+
+                        _data['mhtmlData'] = text;
+
+                        _tab.status = 'done';
+
+                        this.run();
+                        ajax_request("/answer_set_manager/pages", "POST", _data, "json", function (xhr) {
+
+                            xhr.setRequestHeader("Authorization", "Bearer "+SYSTEM.account.token);
+
+                        }, null, null);
+
+                    });
+
+                    if(typeof mhtmlData != 'undefined') {
+                        reader.readAsText(mhtmlData);
+
+                    }
+                    else {
+
+                        console.log("Fail");
+                        let _tab = this.tabs.find(el => el.id == tabId);
+                        _tab.status = 'done';
+                        this.run();
+
+                    }
+                });
+            }
+        });
+
+
+        this._tasks = [];
 
     }
 
@@ -31,6 +77,7 @@ class Job {
         return this._tabs;
     }
 
+
     get tasks() {
         return this._tasks;
     }
@@ -39,46 +86,40 @@ class Job {
 
         let _tab = null;
         let task = null;
-        while(1) {
-            
-            _tab = this.tabs.find(el => el.status == 'init' || el.status == 'done')
 
-            if (!_tab) {
-                setTimeout(function () {
-                }, 1000);
-                
-                continue;
-            }
-            _tab.status = 'running'
+        _tab = this.tabs.find(el => el.status == 'init' || el.status == 'done' || el.status == 'expired');
 
+        if (!_tab) {
 
+            setTimeout(this.run(), 2000);
+        }
+        else {
             if (this._tasks.length == 0) {
-                break;
+
+                console.log("Finished");
+
             }
+            else {
+                _tab.status = 'running';
+                task = this._tasks.pop();
+                _tab.task = task;
+                let _timeout_var = setTimeout(()=>{
+                    _tab.status = 'expired';
+                    this.run();
+                }, 15000);
+                _tab.timeout = _timeout_var;
+                chrome.tabs.update(_tab.id, {url: task.protocol+"://" + task.domain}, tab => {
 
-            task = this._tasks.pop();
-
-            chrome.tabs.update(_tab.id, {url: task.protocol+"://" + task.domain}, tab => {
-                console.log(tab);
-
-                chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-                    console.log(tab);
-
-                    if (tabId == tab.id && changeInfo.status == 'complete') {
-                        let _tab = this.tabs.find(el => el.id == tabId);
-                        console.log(_tab);
-                        _tab.status = 'done'
-                        
-                    }
                 });
-            });
+            }
         }
     }
 }
 Job.id = 1;
 
 class Task {
-    constructor(protocol, domain) {
+    constructor(id, protocol, domain) {
+        this._id = id;
         this._protocol = protocol;
         this._domain = domain;
     }
@@ -86,6 +127,11 @@ class Task {
     get protocol() {
 
         return this._protocol;
+    }
+
+    get id() {
+
+        return this._id;
     }
 
     get domain() {
@@ -97,8 +143,30 @@ class Task {
 class Tab {
     constructor(tab_id) {
         this._id = tab_id;
-        this._status = 'init'
+        this._status = 'init';
+        this._task = null;
+        this._timeout = null;
 
+    }
+
+    set timeout(timeout) {
+
+        this._timeout = timeout;
+    }
+
+    get timeout() {
+
+        return this._timeout;
+    }
+
+    set task(task) {
+
+        this._task = task;
+    }
+
+    get task() {
+
+        return this._task;
     }
 
     get status() {
@@ -195,7 +263,7 @@ tabs_id = [];
 ACCOUNT = new Account();
 SYSTEM = new System();
 
-isLogin(ACCOUNT);
+// isLogin(ACCOUNT);
 
 _DEBUG_MODE ? _debug(0, "Global valuables are initialed") : false;
 
@@ -213,6 +281,27 @@ chrome.runtime.onMessage.addListener(
         let tab;
         
         switch(request.code) {
+            case Communication.LOAD_PAGE():
+
+                let url = "http://" + SYSTEM.host + ":" + SYSTEM.port + "/answer_set_manager/test-set/pages?test_set_id="+request.data['test_set_id']+"&index="+request.data['index'];
+                let filename = "hyu/" +request.data['test_set_id']+'_'+ request.data['index'] + ".mhtml";
+
+                console.log(filename);
+                chrome.downloads.download({
+                    url: url,
+                    filename: filename
+                }, downloadId => {
+                    chrome.downloads.onChanged.addListener(downloadDelta => {
+                        if (downloadDelta.state && downloadDelta.state.current === 'complete' && downloadDelta.id === downloadId) {
+                            chrome.downloads.search({id: page.downloadId}, DownloadItem => {
+                                chrome.tabs.update(tab.id, {url: "file://" + DownloadItem[0].filename});
+
+                            });
+                        }
+                    });
+                });
+
+                break;
             case Communication.JOB_CREATION():
 
                 job = new Job();
@@ -222,7 +311,24 @@ chrome.runtime.onMessage.addListener(
                     data:{
                         job_id: job.id
                     }
-                })
+                });
+
+                break;
+
+            case Communication.TEST_SET_PAGE():
+                ajax_request("/answer_set_manager/test-set/pages?test_set_id="+request.data['test_set_id'], "GET", null,"json",
+                    xhr => {
+                        xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
+
+                    },
+                    data => {
+                        let _data = data['data'];
+                        sendResponse({
+                            data: _data
+                        });
+                    },
+                    null
+                );
 
                 break;
             case Communication.CRAWL_SITE():
@@ -243,8 +349,7 @@ chrome.runtime.onMessage.addListener(
                         let _data = data['data'];
                         
                         _data.forEach(elem => {
-
-                            job.tasks.push(new Task(elem.protocol, elem.domain));
+                            job.tasks.push(new Task(elem.id, elem.protocol, elem.domain));
                             
                         });
 
@@ -306,32 +411,7 @@ chrome.runtime.onMessage.addListener(
                 chrome.tabs.query({active:true}, tabs=> {
 
                     chrome.tabs.sendMessage(tabs[0].id, {code:Communication.SAVE_PAGE()},response => {
-                        chrome.pageCapture.saveAsMHTML({tabId:tabs[0].id}, mhtmlData => {
 
-                            let file = new File([mhtmlData], "name");
-
-                            console.log(file);
-
-                            const reader = new FileReader();
-
-                            reader.addEventListener('loadend', (e) => {
-                                const text = e.srcElement.result;
-
-                                _data = response.data;
-                                _data['mhtmlData'] = text;
-
-                                ajax_request("/answer_set_manager/pages", "POST", _data, "json", function (xhr) {
-
-                                    xhr.setRequestHeader("Authorization", "Bearer "+SYSTEM.account.token);
-
-                                }, null, null);
-
-                            });
-                            reader.readAsText(mhtmlData);
-
-                            new Page();
-
-                        });
                     });
                 });
 
@@ -473,7 +553,6 @@ function ajax_request(path, method, data, dataType, bf_callback, af_callback, er
 
         },
         error:function (request, status, error) {
-            // console.log(a);
             console.log(request, status, error);
             typeof er_callback === 'function' && er_callback(request, status, error);
 

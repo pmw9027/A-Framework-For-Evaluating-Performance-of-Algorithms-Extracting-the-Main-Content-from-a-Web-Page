@@ -1,20 +1,70 @@
-from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite
+from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite, TestSetPage
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 import os
-from .forms import PageForm
+from .forms import PageForm, UploadFileForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.forms import model_to_dict
 from rest_framework.permissions import IsAuthenticated
+from pathlib import Path
 
 
-class AnswerSetAPIView(APIView):
+class TestSetPageAPIView(APIView):
+    permission_classes = []
+
+    def get(self, request, test_set_page_id=None):
+
+        if test_set_page_id:
+            try:
+                page = TestSetPage.objects.get(id=test_set_page_id).page
+            except TestSetPage.DoesNotExist:
+                return HttpResponseNotFound("No file")
+
+
+            if not page.mht_file_path:
+                return HttpResponseNotFound("No file")
+
+            path = Path(page.mht_file_path)
+            if path.is_file():
+                file_reponse = FileResponse(open(path, 'rb'), content_type="message/rfc822")
+                file_reponse['Content-Disposition'] = f'inline; filename="{page.id}.mhtml"'
+                return file_reponse
+
+        else:
+            test_set_sites = TestSetSite.objects.all()
+            if request.GET.get('test_set_id'):
+                test_set_sites.filter(test_set__id=request.GET.get('test_set_id'))
+
+            values = test_set_sites.values_list('id')
+            test_set_pages = TestSetPage.objects.filter(test_set_site__id__in=values).select_related('page')
+
+
+            if request.GET.get('index'):
+
+                page = test_set_pages[int(request.GET.get('index'))].page
+                if not page.mht_file_path:
+                    return HttpResponseNotFound("No file")
+
+                path = Path(page.mht_file_path)
+                if path.is_file():
+                    file_reponse = FileResponse(open(path, 'rb'), content_type="multipart/mixed")
+                    file_reponse['Content-Disposition'] = f'inline; filename="{page.id}.mhtml"'
+                    return file_reponse
+
+            return JsonResponse({
+                'code': 0,
+                'data': [{**model_to_dict(a), **model_to_dict(a.page)} for a in test_set_pages]
+
+            }, safe=False)
+
+
+class TestSetSiteAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, test_set_id=None):
-
         if test_set_id:
+
             test_set_sites = TestSetSite.objects.filter(test_set_id=test_set_id).select_related('site')
 
             return JsonResponse({
@@ -79,45 +129,29 @@ class PageList(APIView):
     def post(self, request, page_id=None):
         _output = {}
 
+        test_set_site = TestSetSite.objects.get(id=request.POST.get('id'))
 
-        form = PageForm(request.POST)
-        if not form.is_valid():
-            print(form.errors)
-            return HttpResponseNotFound("The form ")
+        page = Page.objects.create(site=test_set_site.site, url=request.POST.get('url'), title=request.POST.get('title'))
+        test_set_page = TestSetPage.objects.create(page=page, test_set_site=test_set_site)
 
-        obj, created = Site.objects.get_or_create(protocol=form.cleaned_data['protocol'], domain=form.cleaned_data['domain'])
-        if created:
-            pass
-            obj.save()
-        else:
-            pass
 
-        obj, created = Page.objects.get_or_create(site=obj, url=form.cleaned_data['url'])
 
-        if created:
-            obj.save()
-        else:
-            pass
+        path = f"resources/{page.id}"
+        if not os.path.exists(path):
+            os.makedirs(path)
 
-        # form = UploadFileForm(request.FILES)
-        # if form.is_valid():
-        if True:
+        with open(f"{path}/page.mhtml", 'wb+') as destination:
+            destination.write(request.POST.get('mhtmlData').encode('ascii'))
 
-            path = f"resources/{obj.id}"
+        page.mht_file_path = f"{path}/page.mhtml"
+        page.save()
 
-            if not os.path.exists(path):
-                os.makedirs(path)
+        _output = {
 
-            f = request.POST
+        }
 
-            with open(f"{path}/page.mhtml", 'wb+') as destination:
-                # for chunk in f.chunks():
-                destination.write(form.cleaned_data['mhtmlData'].encode('ascii'))
+        return Response(_output)
 
-            return Response(_output)
-        else:
-            print(form.errors)
-            return Response(_output)
 
 
 class AnswerPage(APIView):

@@ -32,20 +32,21 @@ class TestSetSite(models.Model):
     site = models.ForeignKey(Site, on_delete=models.CASCADE)
 
 
-class TestSetPage(models.Model):
-    id = models.AutoField(primary_key=True)
-    test_set_site = models.ForeignKey(TestSetSite, on_delete=models.CASCADE)
-
-
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
-    answer_set_id = models.ForeignKey(AnswerSet, on_delete=models.SET_NULL, null=True)
+    site = models.ForeignKey(Site, on_delete=models.SET_NULL, null=True)
     url = models.TextField(validators=[URLValidator()])
     title = models.TextField()
     description = models.TextField()
     created = models.DateTimeField(auto_now_add=True, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)
     mht_file_path = models.FilePathField(null=True, path=settings.FILE_PATH_FIELD_DIRECTORY)
+
+
+class TestSetPage(models.Model):
+    id = models.AutoField(primary_key=True)
+    test_set_site = models.ForeignKey(TestSetSite, on_delete=models.CASCADE)
+    page = models.ForeignKey(Page, on_delete=models.CASCADE)
 
 
 class Node(models.Model):

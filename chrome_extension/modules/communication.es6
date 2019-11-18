@@ -30,6 +30,8 @@ class Communication {
     static CRAWL_SITE()          {   return 601; }
 
     static TEST_SET_SITE() {return 701;}
+    static TEST_SET_PAGE() {return 1001;}
+    static LOAD_PAGE() {return 1101;}
 
 
     sendToBackground(_code,_data, callback) {

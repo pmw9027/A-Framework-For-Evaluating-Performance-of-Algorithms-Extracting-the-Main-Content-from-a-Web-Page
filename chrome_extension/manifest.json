@@ -43,18 +43,10 @@
   "content_security_policy": "script-src 'self' https://code.jquery.com https://cdnjs.cloudflare.com https://stackpath.bootstrapcdn.com; object-src 'self'"
   ,
   "permissions": [
-    "webRequest",
-    "cookies",
     "<all_urls>",
-    "tabs",
-    "sessions",
-    "storage",
-    "downloads",
-    "downloads.open",
-    "alarms",
     "pageCapture",
-    "fileSystem",
-    "identity",
+    "tabs",
+    "downloads",
     "notifications"
   ]
 }

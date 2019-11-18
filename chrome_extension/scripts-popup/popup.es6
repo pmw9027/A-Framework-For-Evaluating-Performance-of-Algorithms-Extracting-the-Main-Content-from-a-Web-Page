@@ -15,8 +15,6 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 
 function display(data) {
 
-    console.log(JSON.stringify(data));
-
     if (data.login) {
         $(".username").text("DBLAB");
 
@@ -24,10 +22,12 @@ function display(data) {
         $("#container-nav").removeClass("d-none")
         $("#containver-user").removeClass("d-none")
 
-        let selector = $("#test-set-selector");
+        let selector = $(".test-set-selector");
         selector.empty();
+        let option = $('<option disabled selected value>Choose One...</option>');
+        selector.append(option);
         data.answer_set.forEach(data => {
-            var option = $('<option value='+data._pk+'>'+data._name+'</option>');
+            option = $('<option value='+data._pk+'>'+data._name+'</option>');
             selector.append(option);
 
         });
@@ -107,31 +107,53 @@ window.onload = function() {
 
     });
 
-    $("#test-set-selector").change(event => {
+    $(".test-set-selector").change(event => {
+
+        let val = $(event.target).find(":selected").val();
         let _data = {
-            "test_set_id": $(event.target).find(":selected").val()
-        }
+            "test_set_id": val
+        };
+
         communication.sendToBackground(Communication.TEST_SET_SITE(),_data, data => {
-
             $(".test-set-site-toltal-count").text(data.length);
-
         });
+
+        communication.sendToBackground(Communication.TEST_SET_PAGE(),_data, data => {
+
+            $(".test-set-page-total-count").text(data.length);
+        });
+
     });
+
+    $("#button_left, #button_right").on("click", function(event) {
+
+        let result = parseInt($(".test-set-page-cnt-count").text()) + parseInt(event.target.getAttribute('value'));
+        if (0 < result && result < parseInt($(".test-set-page-total-count").text()) + 1) {
+            $(".test-set-page-cnt-count").text(result);
+
+            communication.sendToBackground(Communication.LOAD_PAGE(),{
+                'test_set_id': $(".test-set-selector > option:selected").last().val(),
+                'index': result
+            }, update);
+
+        }
+    });
+
 
     $('#nav-crawl, #nav-curation, #nav-evaluation, #nav-extraction').click(function(){
         $('.navbar-collapse').collapse('hide');
-        $('#container-crawl').addClass("d-none")
-        $('#container-evaluation').addClass("d-none")
-        $('#container-curation').addClass("d-none")
-        $('#container-extraction').addClass("d-none")
-        
+        $('#container-content').removeClass("d-none")
+
         switch(this.id) {
             case 'nav-crawl':
-                $('#container-crawl').removeClass("d-none");
+                $('#container-button').removeClass("d-none");
+                $('#container-moving-page').addClass("d-none");
                 $('.navbar-brand').text('Crawling');
                 break;
             case 'nav-curation':
-                $('#container-curation').removeClass("d-none");
+                $('#container-button').addClass("d-none");
+                $('#container-moving-page').removeClass("d-none");
+
                 $('.navbar-brand').text('Curation');
                 break;
             case 'nav-extraction':
