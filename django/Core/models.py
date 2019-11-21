@@ -37,6 +37,7 @@ class Page(models.Model):
     site = models.ForeignKey(Site, on_delete=models.SET_NULL, null=True)
     url = models.TextField(validators=[URLValidator()])
     title = models.TextField()
+    depth = models.PositiveIntegerField()
     description = models.TextField()
     created = models.DateTimeField(auto_now_add=True, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)

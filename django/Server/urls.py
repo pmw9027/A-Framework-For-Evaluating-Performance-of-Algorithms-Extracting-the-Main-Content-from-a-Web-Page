@@ -16,7 +16,7 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views.generic import TemplateView
-from rest_framework_jwt.views import obtain_jwt_token
+from rest_framework_jwt.views import obtain_jwt_token, verify_jwt_token, refresh_jwt_token
 
 
 urlpatterns = [
@@ -24,7 +24,8 @@ urlpatterns = [
     url('accounts/', include('django.contrib.auth.urls')),
     url('admin/', admin.site.urls),
     url('api-token-auth/', obtain_jwt_token),
-
+    url(r'^api-token-verify/', verify_jwt_token),
+    url(r'^api-token-refresh/', refresh_jwt_token),
     url(r'^answer_set_manager/', include('AnswerSetManager.urls', namespace='answer_set_manager')),
 
 

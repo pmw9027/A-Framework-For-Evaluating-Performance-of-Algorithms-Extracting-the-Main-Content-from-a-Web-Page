@@ -89,6 +89,25 @@
                     <option selected>Choose...</option>
                 </select>
             </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1"> Count of tab </span>
+                </div>
+                <input id="tabs-input" onkeypress='validate(event)' type="text" class="form-control" placeholder="Only positive number" aria-label="Username" aria-describedby="basic-addon1">
+            </div>
+
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1"> Depth </span>
+                </div>
+                <input id="depth-input" onkeypress='validate(event)' type="text" class="form-control" placeholder="Only number (-1 : No limit)" aria-label="Username" aria-describedby="basic-addon1">
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1"> Breadth </span>
+                </div>
+                <input id="breadth-input" onkeypress='validate(event)' type="text" class="form-control" placeholder="Only number (-1 : No limit)" aria-label="Username" aria-describedby="basic-addon1">
+            </div>
             <div id="container-button">
                 <button id="button-start-crawling" type="button" class="btn btn-primary"> start </button>
             </div>

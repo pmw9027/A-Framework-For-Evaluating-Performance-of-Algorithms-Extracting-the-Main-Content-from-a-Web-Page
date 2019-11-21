@@ -47,6 +47,7 @@
     "pageCapture",
     "tabs",
     "downloads",
-    "notifications"
+    "notifications",
+    "storage"
   ]
 }

@@ -15,37 +15,24 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 
 function display(data) {
 
+
     if (data.login) {
         $(".username").text("DBLAB");
 
-        $("#container-sign").addClass("d-none")
-        $("#container-nav").removeClass("d-none")
-        $("#containver-user").removeClass("d-none")
+        $("#container-sign").addClass("d-none");
+        $("#container-nav").removeClass("d-none");
+        $("#containver-user").removeClass("d-none");
 
         let selector = $(".test-set-selector");
         selector.empty();
         let option = $('<option disabled selected value>Choose One...</option>');
         selector.append(option);
+
         data.answer_set.forEach(data => {
             option = $('<option value='+data._pk+'>'+data._name+'</option>');
             selector.append(option);
 
         });
-
-        // if(!data.page) {
-
-        //     $("#main_content_show_button").css('color','red');
-        //     $("#main_content_show_button").attr("disabled", true);
-
-        // }
-        // else {
-        //     if (data.page.fields.answer === "") {
-
-        //         $("#main_content_show_button").css('color','red');
-        //         $("#main_content_show_button").attr("disabled", true);
-
-        //     }
-        // }
 
     } else {
         $(".container-login").show();
@@ -56,7 +43,6 @@ function display(data) {
 function update() {
 
     communication.sendToBackground(Communication.STATUS(),null, display);
-
 
 }
 
@@ -175,10 +161,21 @@ window.onload = function() {
 
             let sites = data;
 
-            communication.sendToBackground(Communication.JOB_CREATION(), null, data => {
+            let depth = parseInt($("#depth-input").val());
+            let breadth = parseInt($("#breadth-input").val());
+            let cnt_tab = parseInt($("#tabs-input").val());
+
+            communication.sendToBackground(Communication.JOB_CREATION(), {
+                breadth: breadth,
+                depth: depth,
+                test_set_id: selector.val(),
+                cnt_tab: cnt_tab,
+
+            }, data => {
                 communication.sendToBackground(Communication.CRAWL_SITE(), {
                     job_id: data.job_id,
-                    test_set_id: selector.val()
+                    test_set_id: selector.val(),
+                    depth: depth
                 }, data => {
 
                     // resolve(data);
@@ -207,3 +204,21 @@ const POPUPCOMMAND = {
 
 
 };
+
+function validate(evt) {
+    var theEvent = evt || window.event;
+
+    // Handle paste
+    if (theEvent.type === 'paste') {
+        key = event.clipboardData.getData('text/plain');
+    } else {
+        // Handle key press
+        var key = theEvent.keyCode || theEvent.which;
+        key = String.fromCharCode(key);
+    }
+    var regex = /[0-9]|/;
+    if( !regex.test(key) ) {
+        theEvent.returnValue = false;
+        if(theEvent.preventDefault) theEvent.preventDefault();
+    }
+}

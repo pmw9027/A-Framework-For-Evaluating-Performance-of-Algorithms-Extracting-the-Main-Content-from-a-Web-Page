@@ -58,6 +58,14 @@ class TestSetPageAPIView(APIView):
 
             }, safe=False)
 
+    def post(self, request, test_set_id):
+
+        # print(test_set_id)
+        # print(request.data)
+        # print(request.POST)
+
+        return JsonResponse({}, safe=False)
+
 
 class TestSetSiteAPIView(APIView):
     permission_classes = [IsAuthenticated]

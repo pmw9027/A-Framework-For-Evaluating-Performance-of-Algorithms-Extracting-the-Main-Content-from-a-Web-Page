@@ -2,74 +2,44 @@ let _DEBUG_MODE = false;
 
 _DEBUG_MODE ? _debug(0, "Background script started") : false;
 
-
 class Job {
-    constructor() {
+    constructor(cnt_tab, depth, breadth) {
 
         this._tabs = [];
         this._id = Job.id++;
-        chrome.tabs.create(
-            {
-                active:false
-            }, 
-            tab => {
 
-                this._tabs.push(new Tab(tab.id));
+        this._depth = depth;
+        this._breadth = breadth;
+        this._test_set_id = null;
 
-            });
+        for (const i of Array(cnt_tab).keys()) {
+            chrome.tabs.create(
+                {
+                    active: false
+                },
+                tab => {
+                    this._tabs.push(new Tab(tab.id));
+                }
+            );
+        }
 
-        chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-            let _tab = this._tabs.find(el => el.id == tab.id);
-
-            if (_tab && changeInfo.status == 'complete') {
-
-                clearTimeout(_tab.timeout);
-                chrome.pageCapture.saveAsMHTML({tabId:_tab.id}, mhtmlData => {
-                    const reader = new FileReader();
-                    reader.addEventListener('loadend', (e) => {
-                        const text = e.srcElement.result;
-                        let _data = {
-                            'id': _tab.task.id,
-                            'url': tab.url,
-                            'title': tab.title
-                        };
-
-                        _data['mhtmlData'] = text;
-
-                        _tab.status = 'done';
-
-                        this.run();
-                        ajax_request("/answer_set_manager/pages", "POST", _data, "json", function (xhr) {
-
-                            xhr.setRequestHeader("Authorization", "Bearer "+SYSTEM.account.token);
-
-                        }, null, null);
-
-                    });
-
-                    if(typeof mhtmlData != 'undefined') {
-                        reader.readAsText(mhtmlData);
-
-                    }
-                    else {
-
-                        console.log("Fail");
-                        let _tab = this.tabs.find(el => el.id == tabId);
-                        _tab.status = 'done';
-                        this.run();
-
-                    }
-                });
-            }
-        });
-
+        chrome.runtime.onMessage.addListener((this.listener).bind(this));
+        chrome.tabs.onUpdated.addListener((this.onUpdatedLisntener).bind(this));
 
         this._tasks = [];
 
     }
 
 
-    get id(){
+    get test_set_id() {
+        return this._test_set_id;
+    }
+
+    set test_set_id(value) {
+        this._test_set_id = value;
+    }
+
+    get id() {
         return this._id;
     }
 
@@ -82,6 +52,12 @@ class Job {
         return this._tasks;
     }
 
+    start() {
+        for (const i of Array(this._tabs.length).keys()) {
+            this.run();
+        }
+    }
+
     run() {
 
         let _tab = null;
@@ -91,37 +67,177 @@ class Job {
 
         if (!_tab) {
 
+
             setTimeout(this.run(), 2000);
         }
         else {
             if (this._tasks.length == 0) {
 
-                console.log("Finished");
+                console.log("Empty the list of task");
 
+                _tab = this.tabs.find(el => el.status == 'running');
+                if (!_tab) {
+
+                    this.send_to_server();
+                    this.stop();
+                }
             }
             else {
                 _tab.status = 'running';
                 task = this._tasks.pop();
                 _tab.task = task;
-                let _timeout_var = setTimeout(()=>{
+                let _timeout_var = setTimeout(() => {
                     _tab.status = 'expired';
                     this.run();
                 }, 15000);
                 _tab.timeout = _timeout_var;
-                chrome.tabs.update(_tab.id, {url: task.protocol+"://" + task.domain}, tab => {
+                chrome.tabs.update(_tab.id, {url: task.protocol + "://" + task.domain}, tab => {
 
                 });
             }
         }
     }
+
+    send_to_server(page) {
+        ajax_request(`/answer_set_manager/test-set/${this.test_set_id}/pages`, "POST", {'data': page},"json",
+            xhr => {
+                xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
+
+            },
+            data => {
+
+
+            },
+            null
+        );
+    }
+
+    save_mhtml() {
+
+
+
+    }
+
+
+    stop() {
+        for (const tab of this.tabs) {
+            chrome.tabs.remove(tab.id);
+        }
+        chrome.runtime.onMessage.removeListener(this.listener);
+        chrome.tabs.onUpdated.removeListener(this.onUpdatedLisntener);
+    }
+
+    listener(request, sender, sendResponse) {
+
+        let _tab;
+
+        switch (request.code) {
+            case Communication.CRAWL_REQUEST():
+
+                _tab  = this.tabs.find(el => el.id === sender.tab.id);
+                let _data = {
+
+                    depth:_tab.task.depth,
+                    breadth: this._breadth
+
+                };
+
+                sendResponse(_data);
+
+                break;
+            case Communication.CRAWL_RESPONSE_URLS():
+                _tab  = this.tabs.find(el => el.id === sender.tab.id);
+                _tab.status = 'done';
+                clearTimeout(_tab.timeout);
+
+                chrome.pageCapture.saveAsMHTML({tabId:_tab.id}, mhtmlData => {
+                    const reader = new FileReader();
+                    reader.addEventListener('loadend', (e) => {
+                        const text = e.srcElement.result;
+
+                        let _data = {
+                            'id': _tab.task.id,
+                            // 'title': tab.title
+                            'page': new Page(request.data.page.protocol, request.data.page.host, request.data.page.pathname)
+                        };
+
+                        _data['mhtmlData'] = text;
+                        this.send_to_server(_data);
+
+
+                        if (request.data.depth < this._depth) {
+                            for (const pathname of request.data.urls.pathname) {
+                                this.tasks.push(new Task(1, pathname.protocol, request.data.urls.host+pathname.pathname, request.data.depth + 1));
+                            }
+                        }
+
+                        _tab.status = 'done';
+                        this.run();
+                        sendResponse();
+                    });
+
+                    if(typeof mhtmlData != 'undefined') {
+                        reader.readAsText(mhtmlData);
+
+                    }
+                    else {
+                        console.log("Fail");
+                        let _tab = this.tabs.find(el => el.id == tabId);
+                        _tab.status = 'done';
+                        this.run();
+
+                    }
+                });
+
+        }
+    }
+
+    onUpdatedLisntener(tabId, changeInfo, tab) {
+        if (changeInfo.status == 'complete') {
+            chrome.tabs.executeScript(tab.id,
+                {
+                    'file': 'scripts-content/get_url.es6',
+                    'runAt': "document_end"
+                },
+
+                result => {
+
+                });
+        }
+    }
 }
+
 Job.id = 1;
 
 class Task {
-    constructor(id, protocol, domain) {
+    constructor(id, protocol, domain, depth) {
         this._id = id;
         this._protocol = protocol;
         this._domain = domain;
+        this._depth = depth;
+        this._test_set_id = null;
+
+        this._page = new Page(protocol, '1', '1');
+    }
+
+    get test_set_id() {
+        return this._test_set_id;
+    }
+
+    set test_set_id(value) {
+        this._test_set_id = value;
+    }
+
+    get page() {
+        return this._page;
+    }
+
+    set page(value) {
+        this._page = value;
+    }
+
+    get depth() {
+        return this._depth;
     }
 
     get protocol() {
@@ -190,22 +306,16 @@ class Tab {
 }
 
 class Account{
-    constructor(_username) {
+    constructor() {
 
-        this._isLogin = false;
         this._token = null;
+        chrome.storage.local.get('token', data => {
 
+            this._token = data['token'];
+            this.isLogin();
+
+        });
     }
-
-    get isLogin() {
-        return this._isLogin;
-    }
-
-
-    set isLogin(value) {
-        this._isLogin = value;
-    }
-
 
     get token() {
         return this._token;
@@ -214,6 +324,35 @@ class Account{
     set token(value) {
         this._token = value;
     }
+
+    isLogin() {
+
+        ajax_request("/api-token-verify/","POST", {token: this.token},"json",
+            null,
+            data => {
+
+                return true;
+            },
+            null
+
+
+        );
+
+
+        // ajax_request("/api-token-refresh/", "POST", {token: data['token']}, "json", null,
+        //     function(data){
+        //         sendResponse({code:Communication.LOGIN(),data: SYSTEM.account});
+        //
+        //         console.log(data);
+        //
+        //     }, (request, status, error) => {
+        //         console.log(data);
+        //
+        //     }
+        // );
+
+    }
+
 }
 class AnswerSet {
     constructor(_pk, _name) {
@@ -224,12 +363,12 @@ class AnswerSet {
 
 class Page {
 
-    constructor(_pk) {
-        this._answer = new Answer();
-        this._pk = _pk;
-        this._url = null;
-        this._downloadId = null;
+    constructor(protocol, host, pathname) {
+        this.protocol = protocol;
+        this.host = host;
+        this.pathname = pathname;
     }
+
 
     get downloadId() {
         return this._downloadId;
@@ -263,10 +402,7 @@ tabs_id = [];
 ACCOUNT = new Account();
 SYSTEM = new System();
 
-// isLogin(ACCOUNT);
-
 _DEBUG_MODE ? _debug(0, "Global valuables are initialed") : false;
-
 
 chrome.runtime.onMessage.addListener(
     (request, sender, sendResponse) => {
@@ -303,8 +439,10 @@ chrome.runtime.onMessage.addListener(
 
                 break;
             case Communication.JOB_CREATION():
+                job = new Job(request.data.cnt_tab, request.data.depth, request.data.breadth);
 
-                job = new Job();
+                job.test_set_id = request.data['test_set_id'];
+
                 SYSTEM.jobs.push(job);
                 
                 sendResponse({
@@ -337,7 +475,6 @@ chrome.runtime.onMessage.addListener(
 
                 if (typeof job == 'undefined') {
                     console.log("Error 1");
-                    // break;
                 }
 
                 ajax_request("/answer_set_manager/test-set/"+request.data['test_set_id'], "GET", null,"json",
@@ -347,13 +484,11 @@ chrome.runtime.onMessage.addListener(
                     },
                     data => {
                         let _data = data['data'];
-                        
                         _data.forEach(elem => {
-                            job.tasks.push(new Task(elem.id, elem.protocol, elem.domain));
-                            
+                            job.tasks.push(new Task(elem.id, elem.protocol, elem.domain, 0));
                         });
 
-                        job.run();
+                        job.start();
                         
                         sendResponse({
                             data: _data
@@ -378,9 +513,10 @@ chrome.runtime.onMessage.addListener(
                 );
                 break;
             case Communication.STATUS():
-                    ajax_request("/answer_set_manager/answer-set", "GET", null,"json",
+
+                ajax_request("/answer_set_manager/answer-set", "GET", null,"json",
                     xhr => {
-                        xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
+                        xhr.setRequestHeader("Authorization", "JWT "+ SYSTEM.account.token);
 
                     },
                     data => {
@@ -388,17 +524,16 @@ chrome.runtime.onMessage.addListener(
                         SYSTEM.answer_sets.length = 0;
                         _data.forEach(function (value, key) {
                             SYSTEM.answer_sets = new AnswerSet(value['id'], value['name']);
-                            
+
                         });
+
+
                         _data = {
-                            login: SYSTEM.account.isLogin,
-                            list_size: SYSTEM.pageSize,
-                            list_num: SYSTEM.cur_page_index,
+                            login: true,
                             answer_set: SYSTEM.answer_sets,
-                            page:SYSTEM.CurPage,
-                            check_mode:true
-                            
+
                         };
+
                         sendResponse({code:Communication.STATUS(), data: _data});
                     },
                     null
@@ -426,7 +561,6 @@ chrome.runtime.onMessage.addListener(
             case Communication.ISLOGIN():
 
 
-
                 sendResponse({});
                 break;
             // Login
@@ -449,9 +583,9 @@ chrome.runtime.onMessage.addListener(
                         SYSTEM.intialize();
                         SYSTEM.account.isLogin = true;
                         SYSTEM.account.token = data['token'];
-                        sendResponse({code:Communication.LOGIN(),data: SYSTEM.account});
-                        
-                        
+                        chrome.storage.local.set({'token': data['token']});
+
+
                     },
                     function (request, status, error) {
                         if (request.status === 400) {
@@ -496,37 +630,6 @@ function _debug(_code, _message) {
 
 }
 
-function isLogin(account) {
-    $.ajax({
-        url: "http://" + SYSTEM.host + ":"+SYSTEM.port+"/accounts/api/account",
-        method: "GET",
-        crossDomain: true,
-        dataType: "json",
-        async: false,
-        xhrFields: { withCredentials: true },
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader("Authorization", "Bearer "+account.token);
-            // xhr.setRequestHeader("Cookie", "session=1234");
-            // xhr.setRequestHeader ("Authorization", "Basic " + btoa('IEtdGS3FRYsg7EX7NY2QPL6mMShzeYjHmlvrxyIS' + ":" + '7toYm6rQeqWNiJHLzo0mh2nh4nYafe1obIg1kafmVixMDG3eAkyfJntCfbxaZNgDGvznIGp3pNMGfFL5XOMzc4dvLAhAADhimgwOxJe5dsnRN6y8GE2gdAdYfWFDRMz6'));
-        },
-        success:function (data, status, xhr) {
-            _DEBUG_MODE ? _debug(0, "Message is received from Server \n"+JSON.stringify(data)) : false;
-            if (data.status === 1) {
-                // account.isLogin(true);
-
-            }
-            else {
-
-            }
-        },
-        error:function (a, b, c) {
-
-            // console.log(a);
-
-            console.log(a, b, c)
-        }
-    });
-}
 
 function ajax_request(path, method, data, dataType, bf_callback, af_callback, er_callback) {
 

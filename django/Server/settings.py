@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import datetime
 # import yaml
 
 #
@@ -152,3 +153,8 @@ CORS_ORIGIN_ALLOW_ALL = True
 APPEND_SLASH = True
 
 FILE_PATH_FIELD_DIRECTORY = './files'
+
+JWT_AUTH = {
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(hours=1),
+    'JWT_ALLOW_REFRESH': True,
+}
