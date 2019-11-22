@@ -39,6 +39,9 @@ class Page(models.Model):
     title = models.TextField()
     depth = models.PositiveIntegerField()
     description = models.TextField()
+
+    link = models.ForeignKey("self", on_delete=models.CASCADE)
+
     created = models.DateTimeField(auto_now_add=True, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)
     mht_file_path = models.FilePathField(null=True, path=settings.FILE_PATH_FIELD_DIRECTORY)
@@ -48,6 +51,7 @@ class TestSetPage(models.Model):
     id = models.AutoField(primary_key=True)
     test_set_site = models.ForeignKey(TestSetSite, on_delete=models.CASCADE)
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True, null=True)
 
 
 class Node(models.Model):

@@ -534,7 +534,21 @@ chrome.runtime.onMessage.addListener(
 
                         };
 
-                        sendResponse({code:Communication.STATUS(), data: _data});
+                        ajax_request("/answer_set_manager/extractors", "GET", null,"json",
+                            xhr => {
+                                xhr.setRequestHeader("Authorization", "JWT "+ SYSTEM.account.token);
+
+                            },
+                            data => {
+
+                                _data['extractors'] = data['data'];
+
+                                console.log(_data);
+                                sendResponse({code:Communication.STATUS(), data: _data});
+
+                            }
+                        );
+
                     },
                     null
                 );

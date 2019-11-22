@@ -15,18 +15,22 @@ Including another URLconf
 """
 
 from django.urls import path
-from .views import PageList, AnswerPage, TestSetSiteAPIView, TestSetPageAPIView
+from .views import PageList, AnswerPage, TestSetSiteAPIView, TestSetPageAPIView, ExtractorAPIView
 
 
 app_name = 'answer_set_manager'
 urlpatterns = [
 
-    path('pages/<int:page_id>', PageList.as_view(), name="test"),
-    path('pages', PageList.as_view(), name="test"),
-    path('answers/<str:page_id>', AnswerPage.as_view(), name="test"),
-    path('answers/', AnswerPage.as_view(), name="test"),
 
-    path('answer-set', TestSetSiteAPIView.as_view(), name="test"),
+    path('pages/<int:page_id>', PageList.as_view()),
+    path('pages', PageList.as_view()),
+    path('answers/<str:page_id>', AnswerPage.as_view()),
+    path('answers/', AnswerPage.as_view()),
+
+    path('answer-set', TestSetSiteAPIView.as_view()),
+
+    path('extractors', ExtractorAPIView.as_view()),
+
     path('test-set/<int:test_set_id>', TestSetSiteAPIView.as_view()),
 
     path('test-set/sites', TestSetSiteAPIView.as_view()),

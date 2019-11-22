@@ -17,8 +17,8 @@ function display(data) {
 
 
     if (data.login) {
-        $(".username").text("DBLAB");
 
+        $(".username").text("DBLAB");
         $("#container-sign").addClass("d-none");
         $("#container-nav").removeClass("d-none");
         $("#containver-user").removeClass("d-none");
@@ -28,11 +28,24 @@ function display(data) {
         let option = $('<option disabled selected value>Choose One...</option>');
         selector.append(option);
 
+
         data.answer_set.forEach(data => {
             option = $('<option value='+data._pk+'>'+data._name+'</option>');
             selector.append(option);
 
         });
+
+        let selector_extractor = $("#extractor-selector");
+        selector_extractor.empty();
+        option = $('<option disabled selected value>Choose One...</option>');
+        selector_extractor.append(option);
+        data.extractors.forEach(data => {
+            option = $('<option value='+data.id+'>'+data.name+'</option>');
+            selector_extractor.append(option);
+
+        });
+
+
 
     } else {
         $(".container-login").show();
@@ -128,7 +141,7 @@ window.onload = function() {
 
     $('#nav-crawl, #nav-curation, #nav-evaluation, #nav-extraction').click(function(){
         $('.navbar-collapse').collapse('hide');
-        $('#container-content').removeClass("d-none")
+        $('#container-content').removeClass("d-none");
 
         switch(this.id) {
             case 'nav-crawl':
@@ -139,11 +152,13 @@ window.onload = function() {
             case 'nav-curation':
                 $('#container-button').addClass("d-none");
                 $('#container-moving-page').removeClass("d-none");
-
                 $('.navbar-brand').text('Curation');
                 break;
             case 'nav-extraction':
-                $('#container-extraction').removeClass("d-none");
+                $('#container-moving-page').addClass("d-none");
+                $('#depth-input-container').addClass("d-none");
+                $('#breadth-input-container').addClass("d-none");
+                $('#extractor-selector-container').removeClass("d-none");
                 $('.navbar-brand').text('Extraction');
                 break;
             case 'nav-evaluation':
@@ -155,17 +170,22 @@ window.onload = function() {
     });
     $('#button-start-crawling').click((event) => {
         let selector = $("#test-set-selector > option:selected");
+
         $(event.target).text('stop');
+
         communication.sendToBackground(Communication.TEST_SET_SITE(),{test_set_id: selector.val()}, data => {
             $(".progress-total-count").text(data.length);
 
             let sites = data;
-
             let depth = parseInt($("#depth-input").val());
             let breadth = parseInt($("#breadth-input").val());
             let cnt_tab = parseInt($("#tabs-input").val());
 
+
+
             communication.sendToBackground(Communication.JOB_CREATION(), {
+
+                task_id:1,
                 breadth: breadth,
                 depth: depth,
                 test_set_id: selector.val(),

@@ -1,13 +1,13 @@
-from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite, TestSetPage
+from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite, TestSetPage, ContentExtractor
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 import os
-from .forms import PageForm, UploadFileForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.forms import model_to_dict
 from rest_framework.permissions import IsAuthenticated
 from pathlib import Path
+
 
 
 class TestSetPageAPIView(APIView):
@@ -224,4 +224,26 @@ class AnswerPage(APIView):
                 answer.save()
 
             return Response(_output)
+
+
+
+class ExtractorAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        instances = ContentExtractor.objects.all()
+
+        return JsonResponse({
+            'data': [model_to_dict(instance) for instance in instances]
+
+        }, safe=False)
+
+
+
+
+
+
+
+
+
 

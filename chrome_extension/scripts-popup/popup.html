@@ -89,6 +89,14 @@
                     <option selected>Choose...</option>
                 </select>
             </div>
+            <div id='extractor-selector-container' class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <label class="input-group-text" for="inputGroupSelect01">Extractor</label>
+                </div>
+                <select id="extractor-selector" class="test-set-selector custom-select">
+                    <option selected>Choose...</option>
+                </select>
+            </div>
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
                     <span class="input-group-text" id="basic-addon1"> Count of tab </span>
@@ -96,13 +104,13 @@
                 <input id="tabs-input" onkeypress='validate(event)' type="text" class="form-control" placeholder="Only positive number" aria-label="Username" aria-describedby="basic-addon1">
             </div>
 
-            <div class="input-group mb-3">
+            <div id='depth-input-container' class="input-group mb-3">
                 <div class="input-group-prepend">
                     <span class="input-group-text" id="basic-addon1"> Depth </span>
                 </div>
                 <input id="depth-input" onkeypress='validate(event)' type="text" class="form-control" placeholder="Only number (-1 : No limit)" aria-label="Username" aria-describedby="basic-addon1">
             </div>
-            <div class="input-group mb-3">
+            <div id='breadth-input-container' class="input-group mb-3">
                 <div class="input-group-prepend">
                     <span class="input-group-text" id="basic-addon1"> Breadth </span>
                 </div>
