@@ -26,7 +26,9 @@
         "modules/jquery-3.2.0.min.js",
         "modules/jquery.highlight.js",
         "modules/communication.es6",
-        "scripts-content/Node.es6"
+
+        "scripts-content/extractors/Readability.js",
+        "scripts-content/extractors/safari-reader.js"
       ],
       "run_at": "document_start"
     }

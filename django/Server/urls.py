@@ -24,8 +24,11 @@ urlpatterns = [
     url('accounts/', include('django.contrib.auth.urls')),
     url('admin/', admin.site.urls),
     url('api-token-auth/', obtain_jwt_token),
+
     url(r'^api-token-verify/', verify_jwt_token),
     url(r'^api-token-refresh/', refresh_jwt_token),
+
+
     url(r'^answer_set_manager/', include('AnswerSetManager.urls', namespace='answer_set_manager')),
 
 

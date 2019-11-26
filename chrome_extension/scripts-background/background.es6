@@ -7,10 +7,11 @@ class Job {
 
         this._tabs = [];
         this._id = Job.id++;
-
         this._depth = depth;
+        this._type = null;
         this._breadth = breadth;
         this._test_set_id = null;
+        this._extractor = null;
 
         for (const i of Array(cnt_tab).keys()) {
             chrome.tabs.create(
@@ -23,13 +24,28 @@ class Job {
             );
         }
 
-        chrome.runtime.onMessage.addListener((this.listener).bind(this));
-        chrome.tabs.onUpdated.addListener((this.onUpdatedLisntener).bind(this));
-
         this._tasks = [];
+        this._tasks_cnt_total = 0;
+        this._tasks_cnt_done = 0;
+        this._tasks_cnt_error = 0;
 
     }
 
+    get extractor() {
+        return this._extractor;
+    }
+
+    set extractor(value) {
+        this._extractor = value;
+    }
+
+    get type() {
+        return this._type;
+    }
+
+    set type(value) {
+        this._type = value;
+    }
 
     get test_set_id() {
         return this._test_set_id;
@@ -52,7 +68,28 @@ class Job {
         return this._tasks;
     }
 
+
+    set tasks(value) {
+        this._tasks_cnt_total += 1;
+        this._tasks.push(value);
+    }
+
     start() {
+
+        chrome.tabs.onUpdated.addListener((this.onUpdatedLisntener).bind(this));
+        chrome.runtime.onMessage.addListener((this.onMessageListener).bind(this));
+
+
+        if (this.type == 'extraction') {
+            chrome.downloads.onChanged.addListener((this.onDownloadListener).bind(this));
+
+
+        }
+        else if (this.type == 'crawling') {
+
+
+        }
+
         for (const i of Array(this._tabs.length).keys()) {
             this.run();
         }
@@ -80,20 +117,41 @@ class Job {
 
                     this.send_to_server();
                     this.stop();
+
                 }
             }
             else {
+
                 _tab.status = 'running';
-                task = this._tasks.pop();
-                _tab.task = task;
+                _tab.task = this._tasks.pop();
+
                 let _timeout_var = setTimeout(() => {
                     _tab.status = 'expired';
                     this.run();
                 }, 15000);
                 _tab.timeout = _timeout_var;
-                chrome.tabs.update(_tab.id, {url: task.protocol + "://" + task.domain}, tab => {
 
-                });
+                if (this.type == 'extraction') {
+
+                    let _url = `http://${SYSTEM.host}:${SYSTEM.port}/answer_set_manager/test-set/pages/${_tab.task.id}`;
+
+                    chrome.downloads.download({
+                        url: _url,
+                        filename: `hyu/${_tab.task.id}.mhtml`
+                    }, downloadId => {
+
+                        _tab.task.downloadId = downloadId;
+
+
+                    });
+                }
+                else if (this.type == 'crawling') {
+
+                    chrome.tabs.update(_tab.id, {url: task.protocol + "://" + task.domain}, tab => {
+
+                    });
+
+                }
             }
         }
     }
@@ -112,29 +170,55 @@ class Job {
         );
     }
 
-    save_mhtml() {
-
-
-
-    }
-
 
     stop() {
         for (const tab of this.tabs) {
             chrome.tabs.remove(tab.id);
         }
-        chrome.runtime.onMessage.removeListener(this.listener);
+        chrome.runtime.onMessage.removeListener(this.onUpdatedLisntener);
         chrome.tabs.onUpdated.removeListener(this.onUpdatedLisntener);
     }
 
-    listener(request, sender, sendResponse) {
+    onMessageListener(request, sender, sendResponse) {
 
         let _tab;
-
+        let _url;
         switch (request.code) {
+            case Communication.EXTRACTION_QUERY():
+                sendResponse({
+                    extractor: this.extractor
+
+                });
+                break;
+            case Communication.EXTRACTION_RESPONSE():
+                _tab  = this.tabs.find(el => el.id === sender.tab.id);
+                _url = `/answer_set_manager/extractors/${this.extractor}`;
+                ajax_request(_url, 'POST',
+                    {},
+                    null,
+                    response => {
+                        this._tasks_cnt_done += 1;
+                        chrome.runtime.sendMessage(
+                            {
+                                code:Communication.PROCESS_RESULT(),
+                                data: {
+                                    total: this._tasks_cnt_total,
+                                    done: this._tasks_cnt_done,
+                                    error: this._tasks_cnt_error,
+                                }
+                            }
+                        );
+                    },
+                    null,
+                );
+                _tab.status = 'done';
+                clearTimeout(_tab.timeout);
+                this.run();
+                break;
             case Communication.CRAWL_REQUEST():
 
                 _tab  = this.tabs.find(el => el.id === sender.tab.id);
+
                 let _data = {
 
                     depth:_tab.task.depth,
@@ -188,21 +272,50 @@ class Job {
 
                     }
                 });
+                break;
+        }
+    }
+    onDownloadListener(downloadDelta) {
+        if (downloadDelta.state && downloadDelta.state.current === 'complete') {
+            chrome.downloads.search(
+                {
+                    id: downloadDelta.id
 
+                },
+                DownloadItem => {
+
+                    let tab = this.tabs.find(el => el.task.downloadId == downloadDelta.id && el.task != null);
+                    chrome.tabs.update(tab.id, {url: "file://" + DownloadItem[0].filename});
+
+                }
+            );
         }
     }
 
     onUpdatedLisntener(tabId, changeInfo, tab) {
         if (changeInfo.status == 'complete') {
-            chrome.tabs.executeScript(tab.id,
-                {
-                    'file': 'scripts-content/get_url.es6',
-                    'runAt': "document_end"
-                },
+            if (this.type == 'extraction') {
+                chrome.tabs.executeScript(tab.id,
+                    {
+                        'file': 'scripts-content/extraction.es6',
+                        'runAt': "document_end"
+                    },
+                    result => {
 
-                result => {
+                    }
+                );
+            }
+            else if (this.type == 'crawling') {
+                chrome.tabs.executeScript(tab.id,
+                    {
+                        'file': 'scripts-content/get_url.es6',
+                        'runAt': "document_end"
+                    },
+
+                    result => {
 
                 });
+            }
         }
     }
 }
@@ -215,9 +328,28 @@ class Task {
         this._protocol = protocol;
         this._domain = domain;
         this._depth = depth;
-        this._test_set_id = null;
 
+        this._test_set_id = null;
         this._page = new Page(protocol, '1', '1');
+        this._downloadId = null;
+
+        this._extractor = null;
+    }
+
+    get extractor() {
+        return this._extractor;
+    }
+
+    set extractor(value) {
+        this._extractor = value;
+    }
+
+    get downloadId() {
+        return this._downloadId;
+    }
+
+    set downloadId(value) {
+        this._downloadId = value;
     }
 
     get test_set_id() {
@@ -258,6 +390,7 @@ class Task {
 
 class Tab {
     constructor(tab_id) {
+
         this._id = tab_id;
         this._status = 'init';
         this._task = null;
@@ -310,9 +443,8 @@ class Account{
 
         this._token = null;
         chrome.storage.local.get('token', data => {
-
             this._token = data['token'];
-            this.isLogin();
+            // this.isLogin();
 
         });
     }
@@ -333,24 +465,15 @@ class Account{
 
                 return true;
             },
-            null
+            (request, status, error) => {
 
 
-        );
 
+                return false;
 
-        // ajax_request("/api-token-refresh/", "POST", {token: data['token']}, "json", null,
-        //     function(data){
-        //         sendResponse({code:Communication.LOGIN(),data: SYSTEM.account});
-        //
-        //         console.log(data);
-        //
-        //     }, (request, status, error) => {
-        //         console.log(data);
-        //
-        //     }
-        // );
+            // console.log(request, status, error);
 
+        });
     }
 
 }
@@ -370,10 +493,6 @@ class Page {
     }
 
 
-    get downloadId() {
-        return this._downloadId;
-    }
-
     get pk() {
         return this._pk;
     }
@@ -388,11 +507,6 @@ class Page {
 
     get answer() {
         return this._answer;
-    }
-    set downloadId(downloadId) {
-
-        this._downloadId = downloadId;
-
     }
 }
 
@@ -415,6 +529,7 @@ chrome.runtime.onMessage.addListener(
         let _res;
         let job;
         let tab;
+        let _url = null;
         
         switch(request.code) {
             case Communication.LOAD_PAGE():
@@ -422,7 +537,6 @@ chrome.runtime.onMessage.addListener(
                 let url = "http://" + SYSTEM.host + ":" + SYSTEM.port + "/answer_set_manager/test-set/pages?test_set_id="+request.data['test_set_id']+"&index="+request.data['index'];
                 let filename = "hyu/" +request.data['test_set_id']+'_'+ request.data['index'] + ".mhtml";
 
-                console.log(filename);
                 chrome.downloads.download({
                     url: url,
                     filename: filename
@@ -442,6 +556,10 @@ chrome.runtime.onMessage.addListener(
                 job = new Job(request.data.cnt_tab, request.data.depth, request.data.breadth);
 
                 job.test_set_id = request.data['test_set_id'];
+                job.type = request.data['type'];
+                job.extractor = request.data['extractor'];
+
+
 
                 SYSTEM.jobs.push(job);
                 
@@ -469,8 +587,43 @@ chrome.runtime.onMessage.addListener(
                 );
 
                 break;
+            case Communication.EXTRACTION():
+
+                job = SYSTEM.jobs.find(el => el.id == request.data.job_id);
+
+                if (typeof job == 'undefined') {
+                    console.log("Error 1");
+
+                    break;
+                }
+                _url = `/answer_set_manager/test-set/pages?test_set_id=${request.data['test_set_id']}`;
+                ajax_request(_url, "GET", null,"json",
+                    xhr => {
+                        xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
+
+                    },
+                    data => {
+
+                        let _data = data['data'];
+                        let _task = null;
+                        _data.forEach(elem => {
+                            _task = new Task(elem.id, elem.protocol, elem.domain, 0);
+                            job.tasks = _task;
+
+                        });
+
+                        job.start();
+
+                        sendResponse({
+                            data: _data
+                        });
+                    },
+                    null
+                );
+
+                break;
             case Communication.CRAWL_SITE():
-                
+
                 job = SYSTEM.jobs.find(el => el.id == request.data.job_id);
 
                 if (typeof job == 'undefined') {
@@ -527,7 +680,6 @@ chrome.runtime.onMessage.addListener(
 
                         });
 
-
                         _data = {
                             login: true,
                             answer_set: SYSTEM.answer_sets,
@@ -550,11 +702,17 @@ chrome.runtime.onMessage.addListener(
                         );
 
                     },
-                    null
-                );
+                    () => {
+                        _data = {
+                            login: false,
+
+                        };
+
+                        sendResponse({code:Communication.STATUS(), data: _data});
+
+                    });
 
                 _DEBUG_MODE ? _debug(0, "Message is respond to "+ _from + "(code:"+Communication.STATUS()+")\n"+JSON.stringify(_data)) : false;
-
                 break;
             case Communication.SAVE_PAGE():
                 chrome.tabs.query({active:true}, tabs=> {
@@ -613,22 +771,8 @@ chrome.runtime.onMessage.addListener(
 
                 break;
             case Communication.LOGOUT():
-                _data = {
-                    token:SYSTEM.account.token,
-                    client_id:SYSTEM.client_id,
-                    client_secret:SYSTEM.client_secret
-                };
-
-                ajax_request("/o/revoke_token/","POST", _data,"text",
-                    function(xhr){
-
-                        xhr.setRequestHeader("Authorization", "Bearer "+SYSTEM.account.token);
-
-                    },
-                    function(data){
-                        SYSTEM.intialize();
-                        sendResponse({code:Communication.LOGOUT(),data:123});
-                    });
+                SYSTEM.intialize();
+                sendResponse({code:Communication.LOGOUT(),data:123});
                 break;
         }
     });
@@ -644,7 +788,6 @@ function _debug(_code, _message) {
 
 }
 
-
 function ajax_request(path, method, data, dataType, bf_callback, af_callback, er_callback) {
 
     $.ajax({
@@ -658,6 +801,7 @@ function ajax_request(path, method, data, dataType, bf_callback, af_callback, er
         xhrFields: { withCredentials: true },
         beforeSend: function(xhr) {
 
+            xhr.setRequestHeader("Authorization", "JWT "+ SYSTEM.account.token);
             typeof bf_callback === 'function' && bf_callback(xhr);
 
         },

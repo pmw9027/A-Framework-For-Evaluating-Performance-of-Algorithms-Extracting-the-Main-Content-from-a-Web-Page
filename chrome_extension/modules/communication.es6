@@ -28,9 +28,15 @@ class Communication {
     static JOB_CREATION()          {   return 801; }
 
     static CRAWL_SITE()          {   return 601; }
-
     static CRAWL_REQUEST()          {   return 602; }
     static CRAWL_RESPONSE_URLS()          {   return 603; }
+
+    static EXTRACTION()          {   return 1201; }
+    static EXTRACTION_QUERY()          {   return 1202; }
+    static EXTRACTION_RESPONSE()          {   return 1203; }
+
+    static PROCESS_RESULT()          {   return 1301; }
+
 
     static TEST_SET_SITE() {return 701;}
     static TEST_SET_PAGE() {return 1001;}
@@ -49,31 +55,6 @@ class Communication {
             }
         });
     }
-
-    sendToContent (_code,_data, callback) {
-
-        chrome.tabs.sendMessage(tab, { code: _code, data:_data }, function(response) {
-            // 응답 처리
-
-
-            switch (response.code) {
-
-                case Communication.code.MAIN_CONTENT_CHECK:
-
-
-
-
-                    break;
-                default:
-
-
-
-                    break;
-
-            }
-        });
-    }
-
 }
 
 function _debug(_code, _message) {

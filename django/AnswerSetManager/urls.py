@@ -22,6 +22,7 @@ app_name = 'answer_set_manager'
 urlpatterns = [
 
 
+
     path('pages/<int:page_id>', PageList.as_view()),
     path('pages', PageList.as_view()),
     path('answers/<str:page_id>', AnswerPage.as_view()),
@@ -29,7 +30,6 @@ urlpatterns = [
 
     path('answer-set', TestSetSiteAPIView.as_view()),
 
-    path('extractors', ExtractorAPIView.as_view()),
 
     path('test-set/<int:test_set_id>', TestSetSiteAPIView.as_view()),
 
@@ -37,7 +37,9 @@ urlpatterns = [
     # path('test-set/sites/<int:test_set_id>', AnswerSetAPIView.as_view()),
 
     path('test-set/pages', TestSetPageAPIView.as_view()),
-    path('test-set/<int:test_set_id>/pages', TestSetPageAPIView.as_view()),
     path('test-set/pages/<int:test_set_page_id>', TestSetPageAPIView.as_view()),
+
+    path('extractors', ExtractorAPIView.as_view()),
+    path('extractors/<int:extractor_id>', ExtractorAPIView.as_view()),
 
 ]

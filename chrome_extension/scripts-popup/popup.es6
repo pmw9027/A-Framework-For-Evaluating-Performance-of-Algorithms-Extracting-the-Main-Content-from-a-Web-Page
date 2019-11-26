@@ -9,8 +9,35 @@ let communication = new Communication();
 chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     tab = tabs[0].id;
 
-
 });
+
+chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+
+        let elem = null;
+        let progress_bar = null;
+        let value = null;
+        switch (request.code) {
+            case Communication.PROCESS_RESULT():
+                let elem_total  = $(".progress-total-count");
+                elem  = $(".progress-current-count");
+                progress_bar = $(".progress-bar");
+                value = parseInt(progress_bar.attr("aria-valuenow")) + 1;
+                elem_total.text(request.data.total);
+                progress_bar.attr("style", `width: ${(request.data.done / request.data.total) * 100}%`);
+
+                console.log(request.data);
+
+                if(parseInt(elem.text()) < request.data.done) {
+
+                    $(elem).text(parseInt(request.data.done));
+
+                }
+
+                break;
+        }
+    }
+);
 
 
 function display(data) {
@@ -56,7 +83,6 @@ function display(data) {
 function update() {
 
     communication.sendToBackground(Communication.STATUS(),null, display);
-
 }
 
 window.onload = function() {
@@ -138,10 +164,11 @@ window.onload = function() {
         }
     });
 
-
-    $('#nav-crawl, #nav-curation, #nav-evaluation, #nav-extraction').click(function(){
+    $('#nav-crawl, #nav-curation, #nav-evaluation, #nav-extraction').click(function(event){
         $('.navbar-collapse').collapse('hide');
         $('#container-content').removeClass("d-none");
+        $('#nav-crawl, #nav-curation, #nav-evaluation, #nav-extraction').removeClass("active");
+        $(event.target).addClass("active");
 
         switch(this.id) {
             case 'nav-crawl':
@@ -168,41 +195,83 @@ window.onload = function() {
 
         }
     });
-    $('#button-start-crawling').click((event) => {
+
+    $('#button-start').click((event) => {
         let selector = $("#test-set-selector > option:selected");
+        let selector2 = $("#container-nav").find(".active");
 
-        $(event.target).text('stop');
-
-        communication.sendToBackground(Communication.TEST_SET_SITE(),{test_set_id: selector.val()}, data => {
-            $(".progress-total-count").text(data.length);
-
-            let sites = data;
-            let depth = parseInt($("#depth-input").val());
-            let breadth = parseInt($("#breadth-input").val());
-            let cnt_tab = parseInt($("#tabs-input").val());
+        if ($(event.target).text() == 'start'){
+            $(event.target).text('stop');
 
 
 
-            communication.sendToBackground(Communication.JOB_CREATION(), {
 
-                task_id:1,
-                breadth: breadth,
-                depth: depth,
-                test_set_id: selector.val(),
-                cnt_tab: cnt_tab,
+        }
+        else {
+            $(event.target).text('start');
 
-            }, data => {
-                communication.sendToBackground(Communication.CRAWL_SITE(), {
-                    job_id: data.job_id,
+        }
+
+        let _id = selector2.attr('id');
+
+        // let sites = data;
+        let depth = parseInt($("#depth-input").val());
+        let breadth = parseInt($("#breadth-input").val());
+        let cnt_tab = parseInt($("#tabs-input").val());
+        let extractor = parseInt($("#extractor-selector").val());
+
+        switch (_id) {
+            case 'nav-extraction':
+                communication.sendToBackground(Communication.JOB_CREATION(), {
+                    task_id:1,
+                    type: 'extraction',
                     test_set_id: selector.val(),
-                    depth: depth
+                    cnt_tab: cnt_tab,
+                    extractor: extractor,
+
                 }, data => {
+                    communication.sendToBackground(Communication.EXTRACTION(), {
+                        job_id: data.job_id,
+                        test_set_id: selector.val(),
+                    }, data => {
 
-                    // resolve(data);
+                        // resolve(data);
 
+                    });
                 });
-            });
-        });
+                break;
+
+        }
+        //
+        // communication.sendToBackground(Communication.TEST_SET_SITE(), _data, data => {
+        //     $(".progress-total-count").text(data.length);
+        //
+        //     let sites = data;
+        //     let depth = parseInt($("#depth-input").val());
+        //     let breadth = parseInt($("#breadth-input").val());
+        //     let cnt_tab = parseInt($("#tabs-input").val());
+        //
+        //     communication.sendToBackground(Communication.JOB_CREATION(), {
+        //
+        //         task_id:1,
+        //         task: selector2.attr('id'),
+        //         breadth: breadth,
+        //         depth: depth,
+        //         test_set_id: selector.val(),
+        //         cnt_tab: cnt_tab,
+        //
+        //     }, data => {
+        //         communication.sendToBackground(Communication.CRAWL_SITE(), {
+        //             job_id: data.job_id,
+        //             test_set_id: selector.val(),
+        //             depth: depth
+        //         }, data => {
+        //
+        //             // resolve(data);
+        //
+        //         });
+        //     });
+        // });
     });
 };
 

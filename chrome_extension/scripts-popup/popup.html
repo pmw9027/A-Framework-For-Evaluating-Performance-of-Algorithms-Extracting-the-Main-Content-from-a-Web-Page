@@ -63,7 +63,7 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav mr-auto">
-                    <li class="nav-item active">
+                    <li class="nav-item">
                         <a id='nav-crawl' class="nav-link" href="#">Crawl <span class="sr-only">(current)</span></a>
                     </li>
                     <li class="nav-item">
@@ -99,28 +99,25 @@
             </div>
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
-                    <span class="input-group-text" id="basic-addon1"> Count of tab </span>
+                    <span class="input-group-text"> Count of tab </span>
                 </div>
                 <input id="tabs-input" onkeypress='validate(event)' type="text" class="form-control" placeholder="Only positive number" aria-label="Username" aria-describedby="basic-addon1">
             </div>
 
             <div id='depth-input-container' class="input-group mb-3">
                 <div class="input-group-prepend">
-                    <span class="input-group-text" id="basic-addon1"> Depth </span>
+                    <span class="input-group-text"> Depth </span>
                 </div>
                 <input id="depth-input" onkeypress='validate(event)' type="text" class="form-control" placeholder="Only number (-1 : No limit)" aria-label="Username" aria-describedby="basic-addon1">
             </div>
             <div id='breadth-input-container' class="input-group mb-3">
                 <div class="input-group-prepend">
-                    <span class="input-group-text" id="basic-addon1"> Breadth </span>
+                    <span class="input-group-text"> Breadth </span>
                 </div>
                 <input id="breadth-input" onkeypress='validate(event)' type="text" class="form-control" placeholder="Only number (-1 : No limit)" aria-label="Username" aria-describedby="basic-addon1">
             </div>
             <div id="container-button">
-                <button id="button-start-crawling" type="button" class="btn btn-primary"> start </button>
-            </div>
-            <div class="mt-1 mb-1 progress">
-                <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                <button id="button-start" type="button" class="btn btn-primary"> start </button>
             </div>
 
             <div id='container-moving-page' class="mt-1 mb-1 container-fluid btn-group align-middle" role="group" aria-label="Basic example">
@@ -130,69 +127,15 @@
                 <span class="test-set-page-total-count mr-4">0</span>
                 <button value='1' id='button_right' type="button" class="btn btn-secondary">Right</button>
             </div>
+            <div class="mt-1 mb-1 progress">
+                <div class="progress-bar progress-bar-striped" role="progressbar" style="width: 1%" aria-valuenow="1" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
 
             <div class="row mt-1 mb-1 container-fluid btn-group align-middle" role="group" aria-label="Basic example">
                 <div class="col progress-current-count">0</div>
                 <div class="col">/</div>
                 <div class="col progress-total-count">0</div>
-                <div class="col progress-percent">0</div>
-                <div class="col">%</div>
-            </div>
-        </div>
 
-
-        <div id="container-extraction" class="container-fluid d-none">
-             <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <label class="input-group-text" for="inputGroupSelect01">Test Set</label>
-                </div>
-                <select class="custom-select" id="inputGroupSelect01">
-                    <option selected>Choose...</option>
-                </select>
-            </div>
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <label class="input-group-text" for="inputGroupSelect01">Extractor</label>
-                </div>
-                <select class="custom-select" id="inputGroupSelect01">
-                    <option selected>Choose...</option>
-                </select>
-            </div>
-            <div class='container-fluid mx-auto'>
-                <button id="button-start-crawling" type="button" class="btn btn-primary"> start </button>
-            </div>
-            <div class="mt-1 mb-1 progress">
-                <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-
-        </div>
-
-        <div id="container-evaluation" class="container-fluid d-none">
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <label class="input-group-text" for="inputGroupSelect01">Test Set</label>
-                </div>
-                <select class="custom-select" id="inputGroupSelect01">
-                    <option selected>Choose...</option>
-                    <option value="1">One</option>
-                    <option value="2">Two</option>
-                    <option value="3">Three</option>
-                </select>
-            </div>
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <label class="input-group-text" for="inputGroupSelect01">Extractor</label>
-                </div>
-                <select class="custom-select" id="inputGroupSelect01">
-                    <option selected>Choose...</option>
-                    <option value="1">One</option>
-                    <option value="2">Two</option>
-                    <option value="3">Three</option>
-                </select>
-            </div>
-            
-            <div class="mt-1 mb-1 progress">
-                <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
         </div>
     </div>

@@ -35,6 +35,8 @@ class System{
 
     intialize() {
 
+        chrome.storage.local.set({'token': null});
+
         this._account = new Account();
         this._pages = [];
         this._cur_page_index = 0;

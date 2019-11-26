@@ -1,4 +1,4 @@
-from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite, TestSetPage, ContentExtractor
+from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite, TestSetPage, ContentExtractor, Predict
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -7,7 +7,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.forms import model_to_dict
 from rest_framework.permissions import IsAuthenticated
 from pathlib import Path
-
 
 
 class TestSetPageAPIView(APIView):
@@ -20,15 +19,13 @@ class TestSetPageAPIView(APIView):
                 page = TestSetPage.objects.get(id=test_set_page_id).page
             except TestSetPage.DoesNotExist:
                 return HttpResponseNotFound("No file")
-
-
             if not page.mht_file_path:
                 return HttpResponseNotFound("No file")
-
             path = Path(page.mht_file_path)
             if path.is_file():
                 file_reponse = FileResponse(open(path, 'rb'), content_type="message/rfc822")
                 file_reponse['Content-Disposition'] = f'inline; filename="{page.id}.mhtml"'
+
                 return file_reponse
 
         else:
@@ -38,7 +35,6 @@ class TestSetPageAPIView(APIView):
 
             values = test_set_sites.values_list('id')
             test_set_pages = TestSetPage.objects.filter(test_set_site__id__in=values).select_related('page')
-
 
             if request.GET.get('index'):
 
@@ -126,7 +122,6 @@ class PageList(APIView):
                 if path.is_file():
                     file_reponse = FileResponse(open(path, 'rb'), content_type="message/rfc822")
                     file_reponse['Content-Disposition'] = f'inline; filename="{page_id}.mhtml"'
-                    # fileResponse = FileResponse(open(path, 'rb'), content_type="message/rfc822")
                     return file_reponse
                 else:
                     return HttpResponseNotFound("No file")
@@ -141,8 +136,6 @@ class PageList(APIView):
 
         page = Page.objects.create(site=test_set_site.site, url=request.POST.get('url'), title=request.POST.get('title'))
         test_set_page = TestSetPage.objects.create(page=page, test_set_site=test_set_site)
-
-
 
         path = f"resources/{page.id}"
         if not os.path.exists(path):
@@ -226,7 +219,6 @@ class AnswerPage(APIView):
             return Response(_output)
 
 
-
 class ExtractorAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -237,6 +229,18 @@ class ExtractorAPIView(APIView):
             'data': [model_to_dict(instance) for instance in instances]
 
         }, safe=False)
+
+    def post(self, request, extractor_id):
+
+        _output = {'code': 0}
+
+        if extractor_id:
+
+            # predict = Predict.objects.create(content_extractor_id=extractor_id, page_id=1)
+
+            return Response(_output)
+        else:
+            pass
 
 
 
