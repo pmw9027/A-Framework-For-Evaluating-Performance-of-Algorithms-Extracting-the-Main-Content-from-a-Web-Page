@@ -118,11 +118,6 @@ window.onload = function() {
 
     $("#join-button").on("click", function() {
 
-        // let _data = {
-        //     "username":$("input[name='username']").val(),
-        //     "password":$("input[name='password']").val(),
-        // };
-
         communication.sendToBackground(Communication.JOIN(),{}, update);
 
     });
@@ -168,13 +163,21 @@ window.onload = function() {
         $('.navbar-collapse').collapse('hide');
         $('#container-content').removeClass("d-none");
         $('#nav-crawl, #nav-curation, #nav-evaluation, #nav-extraction').removeClass("active");
+
         $(event.target).addClass("active");
+        $('#container-button').addClass("d-none");
+        $('#container-moving-page').addClass("d-none");
+        $('#depth-input-container').addClass("d-none");
+        $('#breadth-input-container').addClass("d-none");
+        $('#extractor-selector-container').addClass("d-none");
 
         switch(this.id) {
             case 'nav-crawl':
-                $('#container-button').removeClass("d-none");
-                $('#container-moving-page').addClass("d-none");
                 $('.navbar-brand').text('Crawling');
+                $('#depth-input-container').removeClass("d-none");
+                $('#breadth-input-container').removeClass("d-none");
+                $('#container-button').removeClass("d-none");
+
                 break;
             case 'nav-curation':
                 $('#container-button').addClass("d-none");
@@ -182,9 +185,7 @@ window.onload = function() {
                 $('.navbar-brand').text('Curation');
                 break;
             case 'nav-extraction':
-                $('#container-moving-page').addClass("d-none");
-                $('#depth-input-container').addClass("d-none");
-                $('#breadth-input-container').addClass("d-none");
+
                 $('#extractor-selector-container').removeClass("d-none");
                 $('.navbar-brand').text('Extraction');
                 break;
@@ -202,9 +203,6 @@ window.onload = function() {
 
         if ($(event.target).text() == 'start'){
             $(event.target).text('stop');
-
-
-
 
         }
         else {
@@ -241,37 +239,31 @@ window.onload = function() {
                 });
                 break;
 
+            case 'nav-crawl':
+                communication.sendToBackground(Communication.JOB_CREATION(), {
+                    task_id:1,
+                    type: 'crawling',
+                    breadth: breadth,
+                    depth: depth,
+                    cnt_tab: cnt_tab,
+
+                    test_set_id: selector.val(),
+                    extractor: extractor,
+
+                }, data => {
+                    communication.sendToBackground(Communication.CRAWL_SITE(), {
+                        job_id: data.job_id,
+                        test_set_id: selector.val(),
+                    }, data => {
+
+                        // resolve(data);
+
+                    });
+                });
+
+
+                break;
         }
-        //
-        // communication.sendToBackground(Communication.TEST_SET_SITE(), _data, data => {
-        //     $(".progress-total-count").text(data.length);
-        //
-        //     let sites = data;
-        //     let depth = parseInt($("#depth-input").val());
-        //     let breadth = parseInt($("#breadth-input").val());
-        //     let cnt_tab = parseInt($("#tabs-input").val());
-        //
-        //     communication.sendToBackground(Communication.JOB_CREATION(), {
-        //
-        //         task_id:1,
-        //         task: selector2.attr('id'),
-        //         breadth: breadth,
-        //         depth: depth,
-        //         test_set_id: selector.val(),
-        //         cnt_tab: cnt_tab,
-        //
-        //     }, data => {
-        //         communication.sendToBackground(Communication.CRAWL_SITE(), {
-        //             job_id: data.job_id,
-        //             test_set_id: selector.val(),
-        //             depth: depth
-        //         }, data => {
-        //
-        //             // resolve(data);
-        //
-        //         });
-        //     });
-        // });
     });
 };
 

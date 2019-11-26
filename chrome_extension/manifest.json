@@ -27,6 +27,7 @@
         "modules/jquery.highlight.js",
         "modules/communication.es6",
 
+        "scripts-content/WebPage.es6",
         "scripts-content/extractors/Readability.js",
         "scripts-content/extractors/safari-reader.js"
       ],

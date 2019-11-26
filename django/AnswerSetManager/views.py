@@ -54,14 +54,31 @@ class TestSetPageAPIView(APIView):
 
             }, safe=False)
 
-    def post(self, request, test_set_id):
+    def post(self, request):
+        _output = {}
 
-        # print(test_set_id)
-        # print(request.data)
-        # print(request.POST)
+        test_set_site = TestSetSite.objects.get(id=request.POST.get('id'))
 
-        return JsonResponse({}, safe=False)
+        page = Page.objects.create(site=test_set_site.site, url=request.POST.get('url'),
+                                   title=request.POST.get('title'))
 
+        test_set_page = TestSetPage.objects.create(page=page, test_set_site=test_set_site)
+
+        path = f"resources/{page.id}"
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        with open(f"{path}/page.mhtml", 'wb+') as destination:
+            destination.write(request.POST.get('mhtmlData').encode('ascii'))
+
+        page.mht_file_path = f"{path}/page.mhtml"
+        page.save()
+
+        _output = {
+
+        }
+
+        return Response(_output)
 
 class TestSetSiteAPIView(APIView):
     permission_classes = [IsAuthenticated]

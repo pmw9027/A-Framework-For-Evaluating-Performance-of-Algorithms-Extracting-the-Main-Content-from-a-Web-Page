@@ -25,7 +25,7 @@ chrome.runtime.sendMessage({
             if (url.host == window.location.host && url.pathname != window.location.pathname) {
                 path_names.push(
                     {
-                        protocol: url.protocol,
+                        protocol: url.protocol.replace(":", ""),
                         pathname: url.pathname
 
                     }
@@ -39,12 +39,17 @@ chrome.runtime.sendMessage({
         }
     }
 
+    let meta = document.querySelector("meta[name=description]");
+    meta = meta.getAttribute("content");
+
 
     let _data = {
         depth:response.depth,
         page: {
             protocol: window.location.protocol,
             host: window.location.host,
+            title: window.document.title,
+            description: meta,
             pathname: window.location.pathname
 
         },

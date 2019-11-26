@@ -147,7 +147,7 @@ class Job {
                 }
                 else if (this.type == 'crawling') {
 
-                    chrome.tabs.update(_tab.id, {url: task.protocol + "://" + task.domain}, tab => {
+                    chrome.tabs.update(_tab.id, {url: _tab.task.protocol + "://" + _tab.task.domain}, tab => {
 
                     });
 
@@ -155,21 +155,6 @@ class Job {
             }
         }
     }
-
-    send_to_server(page) {
-        ajax_request(`/answer_set_manager/test-set/${this.test_set_id}/pages`, "POST", {'data': page},"json",
-            xhr => {
-                xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
-
-            },
-            data => {
-
-
-            },
-            null
-        );
-    }
-
 
     stop() {
         for (const tab of this.tabs) {
@@ -234,6 +219,7 @@ class Job {
                 _tab.status = 'done';
                 clearTimeout(_tab.timeout);
 
+
                 chrome.pageCapture.saveAsMHTML({tabId:_tab.id}, mhtmlData => {
                     const reader = new FileReader();
                     reader.addEventListener('loadend', (e) => {
@@ -242,16 +228,37 @@ class Job {
                         let _data = {
                             'id': _tab.task.id,
                             // 'title': tab.title
-                            'page': new Page(request.data.page.protocol, request.data.page.host, request.data.page.pathname)
+                            'protocol': request.data.page.protocol,
+                            'host': request.data.page.host,
+                            'pathname': request.data.page.pathname
                         };
 
                         _data['mhtmlData'] = text;
-                        this.send_to_server(_data);
 
+                        ajax_request(`/answer_set_manager/test-set/pages`, "POST",
+                            {
+                                'data': _data
+                            },"json",
+                            xhr => {
+                                xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
+
+                            },
+                            data => {
+
+
+                            },
+                            (request, status, error) => {
+                                console.log(request, status, error);
+
+                            }
+                        );
 
                         if (request.data.depth < this._depth) {
                             for (const pathname of request.data.urls.pathname) {
+
                                 this.tasks.push(new Task(1, pathname.protocol, request.data.urls.host+pathname.pathname, request.data.depth + 1));
+
+
                             }
                         }
 
@@ -308,13 +315,21 @@ class Job {
             else if (this.type == 'crawling') {
                 chrome.tabs.executeScript(tab.id,
                     {
-                        'file': 'scripts-content/get_url.es6',
+                        'file': 'scripts-content/indexing.es6',
                         'runAt': "document_end"
                     },
-
                     result => {
+                        chrome.tabs.executeScript(tab.id,
+                            {
+                                'file': 'scripts-content/get_url.es6',
+                                'runAt': "document_end"
+                            },
+                            result => {
 
-                });
+                            }
+                        );
+                    }
+                );
             }
         }
     }
@@ -814,7 +829,6 @@ function ajax_request(path, method, data, dataType, bf_callback, af_callback, er
 
         },
         error:function (request, status, error) {
-            console.log(request, status, error);
             typeof er_callback === 'function' && er_callback(request, status, error);
 
         }
