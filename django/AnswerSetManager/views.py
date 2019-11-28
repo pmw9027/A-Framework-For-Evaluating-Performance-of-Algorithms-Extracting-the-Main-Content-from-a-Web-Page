@@ -7,6 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.forms import model_to_dict
 from rest_framework.permissions import IsAuthenticated
 from pathlib import Path
+from rest_framework.request import Request
 
 
 class TestSetPageAPIView(APIView):
@@ -54,22 +55,23 @@ class TestSetPageAPIView(APIView):
 
             }, safe=False)
 
-    def post(self, request):
+    def post(self, request: Request):
         _output = {}
 
-        test_set_site = TestSetSite.objects.get(id=request.POST.get('id'))
+        _data = request.POST.dict()
+        _data['site_id'] = _data.pop('id')
+        _mhtml = _data.pop('mhtmlData')
 
-        page = Page.objects.create(site=test_set_site.site, url=request.POST.get('url'),
-                                   title=request.POST.get('title'))
+        page = Page.objects.create(**_data)
 
-        test_set_page = TestSetPage.objects.create(page=page, test_set_site=test_set_site)
+        test_set_page = TestSetPage.objects.create(page=page, test_set_site_id=request.POST.get('id'))
 
         path = f"resources/{page.id}"
         if not os.path.exists(path):
             os.makedirs(path)
 
         with open(f"{path}/page.mhtml", 'wb+') as destination:
-            destination.write(request.POST.get('mhtmlData').encode('ascii'))
+            destination.write(_mhtml.encode('ascii'))
 
         page.mht_file_path = f"{path}/page.mhtml"
         page.save()

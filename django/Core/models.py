@@ -35,11 +35,14 @@ class TestSetSite(models.Model):
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
     site = models.ForeignKey(Site, on_delete=models.SET_NULL, null=True)
-    url = models.TextField(validators=[URLValidator()])
+    protocol = models.CharField(max_length=255, null=False, default='https')
+    host = models.CharField(max_length=255, null=False)
+    pathname = models.CharField(max_length=255, null=True, blank=True)
     title = models.TextField()
-    depth = models.PositiveIntegerField()
     description = models.TextField()
-    link = models.ForeignKey("self", on_delete=models.CASCADE)
+
+    depth = models.PositiveIntegerField()
+    link = models.ForeignKey("self", on_delete=models.CASCADE, null=True)
     created = models.DateTimeField(auto_now_add=True, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)
     mht_file_path = models.FilePathField(null=True, path=settings.FILE_PATH_FIELD_DIRECTORY)

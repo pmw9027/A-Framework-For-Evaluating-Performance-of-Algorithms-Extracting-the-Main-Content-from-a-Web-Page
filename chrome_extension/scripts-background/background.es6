@@ -115,7 +115,6 @@ class Job {
                 _tab = this.tabs.find(el => el.status == 'running');
                 if (!_tab) {
 
-                    this.send_to_server();
                     this.stop();
 
                 }
@@ -227,23 +226,19 @@ class Job {
 
                         let _data = {
                             'id': _tab.task.id,
-                            // 'title': tab.title
                             'protocol': request.data.page.protocol,
                             'host': request.data.page.host,
-                            'pathname': request.data.page.pathname
+                            'title': request.data.page.title,
+                            'description': request.data.page.description,
+                            'pathname': request.data.page.pathname,
+                            'depth': request.data.page.depth
                         };
 
                         _data['mhtmlData'] = text;
 
-                        ajax_request(`/answer_set_manager/test-set/pages`, "POST",
-                            {
-                                'data': _data
-                            },"json",
-                            xhr => {
-                                xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
-
-                            },
-                            data => {
+                        ajax_request(`/answer_set_manager/test-set/pages`, "POST", _data, "json",
+                            null,
+                            response => {
 
 
                             },
@@ -256,7 +251,7 @@ class Job {
                         if (request.data.depth < this._depth) {
                             for (const pathname of request.data.urls.pathname) {
 
-                                this.tasks.push(new Task(1, pathname.protocol, request.data.urls.host+pathname.pathname, request.data.depth + 1));
+                                this.tasks.push(new Task(1, pathname.protocol, request.data.urls.host+pathname.pathname, request.data.page.depth + 1));
 
 
                             }
@@ -457,10 +452,10 @@ class Account{
     constructor() {
 
         this._token = null;
-        chrome.storage.local.get('token', data => {
-            this._token = data['token'];
-            // this.isLogin();
 
+        chrome.storage.local.get('token', data => {
+
+            this._token = data['token'];
         });
     }
 
@@ -469,7 +464,9 @@ class Account{
     }
 
     set token(value) {
-        this._token = value;
+        chrome.storage.local.set({'token': value}, ()=> {
+            this._token = value;
+        });
     }
 
     isLogin() {
@@ -492,12 +489,7 @@ class Account{
     }
 
 }
-class AnswerSet {
-    constructor(_pk, _name) {
-        this._pk = _pk;
-        this._name = _name;
-    }
-}
+
 
 class Page {
 
@@ -573,10 +565,7 @@ chrome.runtime.onMessage.addListener(
                 job.test_set_id = request.data['test_set_id'];
                 job.type = request.data['type'];
                 job.extractor = request.data['extractor'];
-
-
-
-                SYSTEM.jobs.push(job);
+                SYSTEM.push_job(job);
                 
                 sendResponse({
                     data:{
@@ -680,38 +669,26 @@ chrome.runtime.onMessage.addListener(
                     null
                 );
                 break;
+            // Status
             case Communication.STATUS():
 
+                console.log(SYSTEM.account);
+
                 ajax_request("/answer_set_manager/answer-set", "GET", null,"json",
-                    xhr => {
-                        xhr.setRequestHeader("Authorization", "JWT "+ SYSTEM.account.token);
-
-                    },
+                    null,
                     data => {
-                        let _data = data['data'];
-                        SYSTEM.answer_sets.length = 0;
-                        _data.forEach(function (value, key) {
-                            SYSTEM.answer_sets = new AnswerSet(value['id'], value['name']);
-
-                        });
-
                         _data = {
                             login: true,
-                            answer_set: SYSTEM.answer_sets,
+                            answer_set: data['data'],
 
                         };
 
                         ajax_request("/answer_set_manager/extractors", "GET", null,"json",
-                            xhr => {
-                                xhr.setRequestHeader("Authorization", "JWT "+ SYSTEM.account.token);
-
-                            },
+                            null,
                             data => {
 
                                 _data['extractors'] = data['data'];
-
-                                console.log(_data);
-                                sendResponse({code:Communication.STATUS(), data: _data});
+                                sendResponse({data: _data});
 
                             }
                         );
@@ -767,12 +744,12 @@ chrome.runtime.onMessage.addListener(
 
                     },
                     function(data){
-                        SYSTEM.intialize();
-                        SYSTEM.account.isLogin = true;
-                        SYSTEM.account.token = data['token'];
-                        chrome.storage.local.set({'token': data['token']});
 
+                        SYSTEM.intialize(() => {
 
+                            SYSTEM.account.token = data.token;
+                            sendResponse({'data': 0});
+                        });
                     },
                     function (request, status, error) {
                         if (request.status === 400) {
@@ -786,8 +763,7 @@ chrome.runtime.onMessage.addListener(
 
                 break;
             case Communication.LOGOUT():
-                SYSTEM.intialize();
-                sendResponse({code:Communication.LOGOUT(),data:123});
+                SYSTEM.intialize(sendResponse);
                 break;
         }
     });
@@ -804,7 +780,6 @@ function _debug(_code, _message) {
 }
 
 function ajax_request(path, method, data, dataType, bf_callback, af_callback, er_callback) {
-
     $.ajax({
         url: "http://" + SYSTEM.host + ":"+SYSTEM.port+path,
         method: method,
@@ -815,17 +790,12 @@ function ajax_request(path, method, data, dataType, bf_callback, af_callback, er
         async: false,
         xhrFields: { withCredentials: true },
         beforeSend: function(xhr) {
-
             xhr.setRequestHeader("Authorization", "JWT "+ SYSTEM.account.token);
             typeof bf_callback === 'function' && bf_callback(xhr);
 
         },
         success:function (data, status, xhr) {
-            // _DEBUG_MODE ? _debug(0, "Message is received from Server (code:"+request.code+")\n"+JSON.stringify(data)) : false;
-            // console.log(data);
             typeof af_callback === 'function' && af_callback(data);
-
-            // _DEBUG_MODE ? _debug(0, "Message is respond to "+ _from + " (code:"+Communication.LOGIN()+")\n"+JSON.stringify(data)) : false;
 
         },
         error:function (request, status, error) {

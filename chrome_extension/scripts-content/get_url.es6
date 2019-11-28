@@ -16,11 +16,13 @@ chrome.runtime.sendMessage({
     let ran_num;
 
 
+
     while(path_names.length < response.breadth && arr.length) {
 
         ran_num = getRandomInt(arr.length);
         try {
             url = new URL(arr[ran_num]);
+
 
             if (url.host == window.location.host && url.pathname != window.location.pathname) {
                 path_names.push(
@@ -44,13 +46,13 @@ chrome.runtime.sendMessage({
 
 
     let _data = {
-        depth:response.depth,
         page: {
-            protocol: window.location.protocol,
+            protocol: window.location.protocol.replace(":", ""),
             host: window.location.host,
             title: window.document.title,
             description: meta,
-            pathname: window.location.pathname
+            pathname: window.location.pathname,
+            depth:response.depth,
 
         },
         urls: {

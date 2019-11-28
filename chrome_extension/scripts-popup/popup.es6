@@ -42,11 +42,11 @@ chrome.runtime.onMessage.addListener(
 
 function display(data) {
 
+    $("#container-sign").addClass("d-none");
 
     if (data.login) {
 
         $(".username").text("DBLAB");
-        $("#container-sign").addClass("d-none");
         $("#container-nav").removeClass("d-none");
         $("#containver-user").removeClass("d-none");
 
@@ -57,7 +57,7 @@ function display(data) {
 
 
         data.answer_set.forEach(data => {
-            option = $('<option value='+data._pk+'>'+data._name+'</option>');
+            option = $('<option value='+data.id+'>'+data.name+'</option>');
             selector.append(option);
 
         });
@@ -71,16 +71,13 @@ function display(data) {
             selector_extractor.append(option);
 
         });
-
-
-
     } else {
-        $(".container-login").show();
+        $("#container-sign").removeClass("d-none");
 
     }
-
 }
 function update() {
+
 
     communication.sendToBackground(Communication.STATUS(),null, display);
 }
