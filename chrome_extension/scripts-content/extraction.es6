@@ -7,11 +7,25 @@ chrome.runtime.sendMessage({
 
     };
 
-    if (response.extractor == 1) {
-        if (article == null) {
-            _data['readable'] = false;
 
+    if (response.extractor == 1) {
+
+
+        console.log(document)
+
+        let finderJS = new ReaderArticleFinder(document);
+        let readable = finderJS.isReaderModeAvailable();
+
+        console.log(finderJS, readable);
+
+        _data['readable'] = readable;
+
+        if (readable) {
+            let hyu = article.getAttribute('hyu');
+
+            _data['predicts'] = [hyu]
         }
+
     }
     else if (response.extractor == 2) {
 
@@ -21,6 +35,9 @@ chrome.runtime.sendMessage({
 
     }
 
+
+    console.log(_data);
+
     chrome.runtime.sendMessage(
         {
             code: Communication.EXTRACTION_RESPONSE(),
@@ -28,3 +45,4 @@ chrome.runtime.sendMessage({
         }
     );
 });
+

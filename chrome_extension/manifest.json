@@ -11,7 +11,8 @@
     "48": "icons/icon.png",
     "128": "icons/icon.png"
   },
-  "web_accessible_resources": [],
+
+
 
   "browser_action": {
     "default_icon": "icons/icon.png",
@@ -26,13 +27,17 @@
         "modules/jquery-3.2.0.min.js",
         "modules/jquery.highlight.js",
         "modules/communication.es6",
-
-        "scripts-content/WebPage.es6",
         "scripts-content/extractors/Readability.js",
-        "scripts-content/extractors/safari-reader.js"
+        "scripts-content/extractors/safari-reader.js",
+        "scripts-content/PageNode.es6",
+        "scripts-content/WebPage.es6"
       ],
       "run_at": "document_start"
     }
+  ],
+  "web_accessible_resources": [
+    "scripts-content/extractors/Readability.js",
+    "scripts-content/extractors/safari-reader.js"
   ],
   "background": {
     "scripts": [

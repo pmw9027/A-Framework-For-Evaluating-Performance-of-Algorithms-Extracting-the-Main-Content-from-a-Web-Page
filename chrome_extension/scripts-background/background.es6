@@ -90,7 +90,9 @@ class Job {
 
         }
 
+
         for (const i of Array(this._tabs.length).keys()) {
+
             this.run();
         }
     }
@@ -101,9 +103,9 @@ class Job {
         let task = null;
 
         _tab = this.tabs.find(el => el.status == 'init' || el.status == 'done' || el.status == 'expired');
+        _tab.status = 'running';
 
         if (!_tab) {
-
 
             setTimeout(this.run(), 2000);
         }
@@ -111,7 +113,6 @@ class Job {
             if (this._tasks.length == 0) {
 
                 console.log("Empty the list of task");
-
                 _tab = this.tabs.find(el => el.status == 'running');
                 if (!_tab) {
 
@@ -120,8 +121,6 @@ class Job {
                 }
             }
             else {
-
-                _tab.status = 'running';
                 _tab.task = this._tasks.pop();
 
                 let _timeout_var = setTimeout(() => {
@@ -146,10 +145,12 @@ class Job {
                 }
                 else if (this.type == 'crawling') {
 
-                    chrome.tabs.update(_tab.id, {url: _tab.task.protocol + "://" + _tab.task.domain}, tab => {
+                    let _url = _tab.task.protocol + "://" + _tab.task.domain;
+
+
+                    chrome.tabs.update(_tab.id, {url: _url}, tab => {
 
                     });
-
                 }
             }
         }
@@ -167,6 +168,7 @@ class Job {
 
         let _tab;
         let _url;
+        let _data;
         switch (request.code) {
             case Communication.EXTRACTION_QUERY():
                 sendResponse({
@@ -177,8 +179,15 @@ class Job {
             case Communication.EXTRACTION_RESPONSE():
                 _tab  = this.tabs.find(el => el.id === sender.tab.id);
                 _url = `/answer_set_manager/extractors/${this.extractor}`;
+                _data = {
+                    'page_id':_tab.task.page.id,
+                    'readable':request.data.readable,
+
+                };
+
                 ajax_request(_url, 'POST',
-                    {},
+                    JSON.stringify(_data),
+                    "json",
                     null,
                     response => {
                         this._tasks_cnt_done += 1;
@@ -197,13 +206,13 @@ class Job {
                 );
                 _tab.status = 'done';
                 clearTimeout(_tab.timeout);
-                this.run();
+                // this.run();
                 break;
             case Communication.CRAWL_REQUEST():
 
                 _tab  = this.tabs.find(el => el.id === sender.tab.id);
 
-                let _data = {
+                _data = {
 
                     depth:_tab.task.depth,
                     breadth: this._breadth
@@ -215,14 +224,12 @@ class Job {
                 break;
             case Communication.CRAWL_RESPONSE_URLS():
                 _tab  = this.tabs.find(el => el.id === sender.tab.id);
-                _tab.status = 'done';
-                clearTimeout(_tab.timeout);
-
 
                 chrome.pageCapture.saveAsMHTML({tabId:_tab.id}, mhtmlData => {
                     const reader = new FileReader();
                     reader.addEventListener('loadend', (e) => {
                         const text = e.srcElement.result;
+
 
                         let _data = {
                             'id': _tab.task.id,
@@ -231,7 +238,8 @@ class Job {
                             'title': request.data.page.title,
                             'description': request.data.page.description,
                             'pathname': request.data.page.pathname,
-                            'depth': request.data.page.depth
+                            'depth': request.data.page.depth,
+                            'nodes': JSON.stringify(request.data.nodes)
                         };
 
                         _data['mhtmlData'] = text;
@@ -248,7 +256,9 @@ class Job {
                             }
                         );
 
-                        if (request.data.depth < this._depth) {
+
+
+                        if (request.data.page.depth < this._depth) {
                             for (const pathname of request.data.urls.pathname) {
 
                                 this.tasks.push(new Task(1, pathname.protocol, request.data.urls.host+pathname.pathname, request.data.page.depth + 1));
@@ -256,7 +266,7 @@ class Job {
 
                             }
                         }
-
+                        clearTimeout(_tab.timeout);
                         _tab.status = 'done';
                         this.run();
                         sendResponse();
@@ -267,9 +277,12 @@ class Job {
 
                     }
                     else {
-                        console.log("Fail");
-                        let _tab = this.tabs.find(el => el.id == tabId);
+
+                        clearTimeout(_tab.timeout);
                         _tab.status = 'done';
+
+                        // Need of Process
+
                         this.run();
 
                     }
@@ -338,13 +351,13 @@ class Task {
         this._protocol = protocol;
         this._domain = domain;
         this._depth = depth;
-
         this._test_set_id = null;
-        this._page = new Page(protocol, '1', '1');
+        this._page = new Page(id, protocol, domain, '1');
         this._downloadId = null;
 
         this._extractor = null;
     }
+
 
     get extractor() {
         return this._extractor;
@@ -493,12 +506,22 @@ class Account{
 
 class Page {
 
-    constructor(protocol, host, pathname) {
+    constructor(id, protocol, host, pathname=null) {
+
+        this._id = id;
         this.protocol = protocol;
         this.host = host;
         this.pathname = pathname;
+
     }
 
+    get id() {
+        return this._id;
+    }
+
+    set id(value) {
+        this._id = value;
+    }
 
     get pk() {
         return this._pk;
@@ -544,14 +567,29 @@ chrome.runtime.onMessage.addListener(
                 let url = "http://" + SYSTEM.host + ":" + SYSTEM.port + "/answer_set_manager/test-set/pages?test_set_id="+request.data['test_set_id']+"&index="+request.data['index'];
                 let filename = "hyu/" +request.data['test_set_id']+'_'+ request.data['index'] + ".mhtml";
 
+                ajax_request("/answer_set_manager/test-set/pages?test_set_id="+request.data['test_set_id'], "GET", null,"json",
+                    xhr => {
+                        xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
+
+                    },
+                    data => {
+                        let _data = data['data'];
+                        sendResponse({
+                            data: _data
+                        });
+                    },
+                    null
+                );
+
                 chrome.downloads.download({
                     url: url,
                     filename: filename
                 }, downloadId => {
                     chrome.downloads.onChanged.addListener(downloadDelta => {
                         if (downloadDelta.state && downloadDelta.state.current === 'complete' && downloadDelta.id === downloadId) {
-                            chrome.downloads.search({id: page.downloadId}, DownloadItem => {
-                                chrome.tabs.update(tab.id, {url: "file://" + DownloadItem[0].filename});
+                            chrome.downloads.search({id: downloadId}, DownloadItem => {
+
+                                chrome.tabs.update(null, {url: "file://" + DownloadItem[0].filename});
 
                             });
                         }
@@ -611,6 +649,9 @@ chrome.runtime.onMessage.addListener(
                         let _data = data['data'];
                         let _task = null;
                         _data.forEach(elem => {
+
+
+
                             _task = new Task(elem.id, elem.protocol, elem.domain, 0);
                             job.tasks = _task;
 
@@ -641,8 +682,13 @@ chrome.runtime.onMessage.addListener(
                     },
                     data => {
                         let _data = data['data'];
+                        let task = null;
                         _data.forEach(elem => {
-                            job.tasks.push(new Task(elem.id, elem.protocol, elem.domain, 0));
+
+                            task = new Task(elem.id, elem.protocol, elem.domain, 0);
+                            task.page = new Page(elem.id, elem.protocol, elem.domain);
+                            job.tasks.push(task);
+
                         });
 
                         job.start();
@@ -784,7 +830,7 @@ function ajax_request(path, method, data, dataType, bf_callback, af_callback, er
         url: "http://" + SYSTEM.host + ":"+SYSTEM.port+path,
         method: method,
         crossDomain: true,
-        // contentType: "application/json; charset=utf-8",
+        contentType: "application/json; charset=utf-8",
         data:data,
         dataType: dataType,
         async: false,

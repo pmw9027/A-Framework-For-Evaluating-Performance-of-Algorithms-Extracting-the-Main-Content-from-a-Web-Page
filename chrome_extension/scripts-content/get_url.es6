@@ -42,7 +42,9 @@ chrome.runtime.sendMessage({
     }
 
     let meta = document.querySelector("meta[name=description]");
-    meta = meta.getAttribute("content");
+
+    if(meta != null)
+        meta = meta.getAttribute("content");
 
 
     let _data = {
@@ -55,6 +57,7 @@ chrome.runtime.sendMessage({
             depth:response.depth,
 
         },
+        nodes: webPage.nodes,
         urls: {
             host: window.location.host,
             pathname: path_names

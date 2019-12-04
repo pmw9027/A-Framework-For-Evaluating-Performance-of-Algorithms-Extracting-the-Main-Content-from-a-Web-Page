@@ -141,7 +141,13 @@ window.onload = function() {
         });
 
     });
+    $("#flash-button").on("click", function(event) {
+        parseInt($("#extractor-selector").val())
 
+
+
+
+    });
     $("#button_left, #button_right").on("click", function(event) {
 
         let result = parseInt($(".test-set-page-cnt-count").text()) + parseInt(event.target.getAttribute('value'));
@@ -150,7 +156,7 @@ window.onload = function() {
 
             communication.sendToBackground(Communication.LOAD_PAGE(),{
                 'test_set_id': $(".test-set-selector > option:selected").last().val(),
-                'index': result
+                'index': result - 1
             }, update);
 
         }
@@ -167,6 +173,8 @@ window.onload = function() {
         $('#depth-input-container').addClass("d-none");
         $('#breadth-input-container').addClass("d-none");
         $('#extractor-selector-container').addClass("d-none");
+        $('#cnt-tab-selector-container').addClass("d-none");
+        $('#container-flash-button').addClass("d-none");
 
         switch(this.id) {
             case 'nav-crawl':
@@ -174,19 +182,25 @@ window.onload = function() {
                 $('#depth-input-container').removeClass("d-none");
                 $('#breadth-input-container').removeClass("d-none");
                 $('#container-button').removeClass("d-none");
+                $('#cnt-tab-selector-container').removeClass("d-none");
 
                 break;
             case 'nav-curation':
                 $('#container-button').addClass("d-none");
                 $('#container-moving-page').removeClass("d-none");
+                $('#extractor-selector-container').removeClass("d-none");
+                $('#container-flash-button').removeClass("d-none");
                 $('.navbar-brand').text('Curation');
                 break;
             case 'nav-extraction':
-
+                $('#cnt-tab-selector-container').removeClass("d-none");
                 $('#extractor-selector-container').removeClass("d-none");
+                $('#container-button').removeClass("d-none");
                 $('.navbar-brand').text('Extraction');
                 break;
             case 'nav-evaluation':
+
+                $('#cnt-tab-selector-container').removeClass("d-none");
                 $('#container-evaluation').removeClass("d-none");
                 $('.navbar-brand').text('Evaluation');
                 break;

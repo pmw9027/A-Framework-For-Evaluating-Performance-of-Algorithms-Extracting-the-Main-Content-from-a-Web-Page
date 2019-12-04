@@ -55,47 +55,42 @@ class TestSetPage(models.Model):
     created = models.DateTimeField(auto_now_add=True, null=True)
 
 
+class NodeName(models.Model):
+    id = models.AutoField(primary_key=True)
+
+
 class Node(models.Model):
 
     id = models.AutoField(primary_key=True)
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
     hyu = models.PositiveIntegerField(null=False)
 
-    pos_left = models.FloatField()
-    pos_right = models.FloatField()
-    pos_top = models.FloatField()
-    pos_bottom = models.FloatField()
+    node_name = models.CharField(max_length=50)
+
+    offset_top = models.FloatField()
+    offset_left = models.FloatField()
+
+    offset_width = models.FloatField()
+    offset_height = models.FloatField()
 
     @property
     def pos_center_x(self):
-        return self.pos_left + self.width/2
+        return self.offset_left + self.offset_width/2
 
     @property
     def pos_center_y(self):
-        return self.pos_top + self.height/2
-
-    @property
-    def width(self):
-
-        return self.pos_right - self.pos_left
-
-    @property
-    def height(self):
-        return self.pos_bottom - self.pos_top
+        return self.offset_top + self.offset_height/2
 
     @property
     def area_size(self):
-        return self.width * self.height
+        return self.offset_width * self.offset_height
 
     # font features
-
     @property
     def font_color_popularity(self):
         return 0
 
     # text features
-
-    # text = models.IntegerField()
     num_chars = models.IntegerField()
     num_tags = models.IntegerField()
     num_links = models.IntegerField()
@@ -112,7 +107,6 @@ class Node(models.Model):
     def link_density(self):
         return self.num_links / (self.num_tags + 1)
 
-    label = models.IntegerField(choices=[(1, 'TEST'), (2, 'TEST'), (3, 'TEST')], null=False)
 
     class Meta:
         unique_together = [['page', 'hyu']]

@@ -9,6 +9,7 @@ class WebPage {
     constructor(document) {
         WebPage.IND = 0;
         this._root_node = document.getElementsByTagName('body')[0];
+        this._nodes = [];
 
 
     }
@@ -23,9 +24,24 @@ class WebPage {
             if (_parent_node.nodeName.toUpperCase() === "#TEXT") {
 
             } else {
+
+                let node = new PageNode(WebPage.IND, _parent_node);
+
+                this.pushNode(node.nodeJson);
                 _parent_node.setAttribute(WebPage.ATTR(), WebPage.IND++)
 
             }
         }
     }
+
+
+    get nodes() {
+        return this._nodes;
+    }
+
+    pushNode(value) {
+
+        this._nodes.push(value);
+    }
+
 }

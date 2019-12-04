@@ -158,3 +158,5 @@ JWT_AUTH = {
     'JWT_EXPIRATION_DELTA': datetime.timedelta(hours=1),
     'JWT_ALLOW_REFRESH': True,
 }
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000000

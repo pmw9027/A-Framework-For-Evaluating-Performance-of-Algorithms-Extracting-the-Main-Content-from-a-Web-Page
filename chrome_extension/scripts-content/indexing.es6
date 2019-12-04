@@ -1,7 +1,2 @@
-console.log(window.location);
-
-
-let webPage = new WebPage(document.body);
+let webPage = new WebPage(document);
 webPage.indexing();
-
-

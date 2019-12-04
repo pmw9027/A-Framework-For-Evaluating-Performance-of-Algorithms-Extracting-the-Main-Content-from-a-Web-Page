@@ -1,4 +1,4 @@
-from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite, TestSetPage, ContentExtractor, Predict
+from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite, TestSetPage, ContentExtractor, Predict, Node
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,6 +8,7 @@ from django.forms import model_to_dict
 from rest_framework.permissions import IsAuthenticated
 from pathlib import Path
 from rest_framework.request import Request
+import json
 
 
 class TestSetPageAPIView(APIView):
@@ -20,14 +21,18 @@ class TestSetPageAPIView(APIView):
                 page = TestSetPage.objects.get(id=test_set_page_id).page
             except TestSetPage.DoesNotExist:
                 return HttpResponseNotFound("No file")
+
             if not page.mht_file_path:
                 return HttpResponseNotFound("No file")
+
             path = Path(page.mht_file_path)
             if path.is_file():
                 file_reponse = FileResponse(open(path, 'rb'), content_type="message/rfc822")
                 file_reponse['Content-Disposition'] = f'inline; filename="{page.id}.mhtml"'
-
                 return file_reponse
+
+            else:
+                return HttpResponseNotFound("No file")
 
         else:
             test_set_sites = TestSetSite.objects.all()
@@ -60,11 +65,18 @@ class TestSetPageAPIView(APIView):
 
         _data = request.POST.dict()
         _data['site_id'] = _data.pop('id')
+        _nodes = _data.pop('nodes')
         _mhtml = _data.pop('mhtmlData')
 
         page = Page.objects.create(**_data)
 
         test_set_page = TestSetPage.objects.create(page=page, test_set_site_id=request.POST.get('id'))
+
+        _nodes = json.loads(_nodes)
+
+        for _node in _nodes:
+            _node = json.loads(_node)
+            Node.objects.create(**_node, page=page)
 
         path = f"resources/{page.id}"
         if not os.path.exists(path):
@@ -89,6 +101,8 @@ class TestSetSiteAPIView(APIView):
         if test_set_id:
 
             test_set_sites = TestSetSite.objects.filter(test_set_id=test_set_id).select_related('site')
+
+
 
             return JsonResponse({
                 'code': 0,
@@ -241,21 +255,47 @@ class AnswerPage(APIView):
 class ExtractorAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        instances = ContentExtractor.objects.all()
+    def get(self, request, extractor_id=None):
 
-        return JsonResponse({
-            'data': [model_to_dict(instance) for instance in instances]
+        if extractor_id:
+            predicts = Predict.objects.filter(content_extractor_id=extractor_id)
 
-        }, safe=False)
+            test_set_sites = TestSetSite.objects.all()
+            if request.GET.get('test_set_id'):
+                test_set_sites.filter(test_set__id=request.GET.get('test_set_id'))
 
-    def post(self, request, extractor_id):
+            values = test_set_sites.values_list('id')
+            test_set_pages = TestSetPage.objects.filter(test_set_site__id__in=values).select_related('page')
+
+            if request.GET.get('index'):
+                page = test_set_pages[int(request.GET.get('index'))].page
+
+            predict = predicts.filter(page=page)
+
+            return JsonResponse({
+                'data': model_to_dict(predict) if predict.exists() else None
+
+            })
+
+        else:
+            instances = ContentExtractor.objects.all()
+
+            return JsonResponse({
+                'data': [model_to_dict(instance) for instance in instances]
+
+            }, safe=False)
+
+    def post(self, request, extractor_id=None):
 
         _output = {'code': 0}
 
-        if extractor_id:
 
-            # predict = Predict.objects.create(content_extractor_id=extractor_id, page_id=1)
+        print(request.data)
+
+        if extractor_id:
+            predict = Predict.objects.create(**request.data, content_extractor_id=extractor_id)
+
+
 
             return Response(_output)
         else:
