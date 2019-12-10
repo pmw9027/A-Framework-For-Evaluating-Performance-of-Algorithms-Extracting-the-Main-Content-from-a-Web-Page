@@ -1,6 +1,6 @@
-let _DEBUG_MODE = false;
+let _DEBUG_MODE = true;
 
-_DEBUG_MODE ? _debug(0, "Background script started") : false;
+_DEBUG_MODE ? console.log(0, "Background script started") : false;
 
 class Job {
     constructor(cnt_tab, depth, breadth) {
@@ -81,6 +81,9 @@ class Job {
 
 
         if (this.type == 'extraction') {
+
+            _DEBUG_MODE ? console.log(0, "Extraction Job Started..") : false;
+
             chrome.downloads.onChanged.addListener((this.onDownloadListener).bind(this));
 
 
@@ -130,8 +133,9 @@ class Job {
                 _tab.timeout = _timeout_var;
 
                 if (this.type == 'extraction') {
+                    _DEBUG_MODE ? console.log(0, "One Task of Extraction Ran") : false;
 
-                    let _url = `http://${SYSTEM.host}:${SYSTEM.port}/answer_set_manager/test-set/pages/${_tab.task.id}`;
+                    let _url = `http://${SYSTEM.host}:${SYSTEM.port}/answer_set_manager/test-set/${_tab.task.job.test_set_id}/pages/${_tab.task.id}`;
 
                     chrome.downloads.download({
                         url: _url,
@@ -146,7 +150,6 @@ class Job {
                 else if (this.type == 'crawling') {
 
                     let _url = _tab.task.protocol + "://" + _tab.task.domain;
-
 
                     chrome.tabs.update(_tab.id, {url: _url}, tab => {
 
@@ -165,6 +168,7 @@ class Job {
     }
 
     onMessageListener(request, sender, sendResponse) {
+        _DEBUG_MODE ? console.log(0, "Received a Message") : false;
 
         let _tab;
         let _url;
@@ -177,11 +181,15 @@ class Job {
                 });
                 break;
             case Communication.EXTRACTION_RESPONSE():
+                _DEBUG_MODE ? console.log(0, `Received a Message`) : false;
+
+
                 _tab  = this.tabs.find(el => el.id === sender.tab.id);
                 _url = `/answer_set_manager/extractors/${this.extractor}`;
                 _data = {
                     'page_id':_tab.task.page.id,
                     'readable':request.data.readable,
+                    'content':request.data.content,
 
                 };
 
@@ -190,6 +198,12 @@ class Job {
                     "json",
                     null,
                     response => {
+                        _DEBUG_MODE ? console.log(0, "Sent a Message to Server") : false;
+                        _tab.status = 'done';
+                        clearTimeout(_tab.timeout);
+                        this.run();
+                        _DEBUG_MODE ? console.log(0, "Task Ran") : false;
+
                         this._tasks_cnt_done += 1;
                         chrome.runtime.sendMessage(
                             {
@@ -204,11 +218,10 @@ class Job {
                     },
                     null,
                 );
-                _tab.status = 'done';
-                clearTimeout(_tab.timeout);
-                // this.run();
+
                 break;
             case Communication.CRAWL_REQUEST():
+                _DEBUG_MODE ? console.log(0, "Received a Message from Content") : false;
 
                 _tab  = this.tabs.find(el => el.id === sender.tab.id);
 
@@ -230,7 +243,6 @@ class Job {
                     reader.addEventListener('loadend', (e) => {
                         const text = e.srcElement.result;
 
-
                         let _data = {
                             'id': _tab.task.id,
                             'protocol': request.data.page.protocol,
@@ -244,7 +256,8 @@ class Job {
 
                         _data['mhtmlData'] = text;
 
-                        ajax_request(`/answer_set_manager/test-set/pages`, "POST", _data, "json",
+
+                        ajax_request(`/answer_set_manager/test-set/${_tab.task.job.test_set_id}/pages`, "POST", JSON.stringify(_data), "json",
                             null,
                             response => {
 
@@ -299,6 +312,7 @@ class Job {
                 },
                 DownloadItem => {
 
+                    _DEBUG_MODE ? console.log(0, "One MHTML file download completed") : false;
                     let tab = this.tabs.find(el => el.task.downloadId == downloadDelta.id && el.task != null);
                     chrome.tabs.update(tab.id, {url: "file://" + DownloadItem[0].filename});
 
@@ -309,16 +323,10 @@ class Job {
 
     onUpdatedLisntener(tabId, changeInfo, tab) {
         if (changeInfo.status == 'complete') {
-            if (this.type == 'extraction') {
-                chrome.tabs.executeScript(tab.id,
-                    {
-                        'file': 'scripts-content/extraction.es6',
-                        'runAt': "document_end"
-                    },
-                    result => {
+            _DEBUG_MODE ? console.log(0, "Content Load Completely") : false;
 
-                    }
-                );
+            if (this.type == 'extraction') {
+
             }
             else if (this.type == 'crawling') {
                 chrome.tabs.executeScript(tab.id,
@@ -347,6 +355,8 @@ Job.id = 1;
 
 class Task {
     constructor(id, protocol, domain, depth) {
+
+        this._job = null;
         this._id = id;
         this._protocol = protocol;
         this._domain = domain;
@@ -358,6 +368,13 @@ class Task {
         this._extractor = null;
     }
 
+    get job() {
+        return this._job;
+    }
+
+    set job(value) {
+        this._job = value;
+    }
 
     get extractor() {
         return this._extractor;
@@ -546,13 +563,13 @@ tabs_id = [];
 ACCOUNT = new Account();
 SYSTEM = new System();
 
-_DEBUG_MODE ? _debug(0, "Global valuables are initialed") : false;
+_DEBUG_MODE ? console.log(0, "Global valuables are initialed") : false;
 
 chrome.runtime.onMessage.addListener(
     (request, sender, sendResponse) => {
 
         let _from = sender.tab ? "script" : "extension";
-        _DEBUG_MODE ? _debug(0, "Message is received from "+ _from + "(code:"+request.code+")\n"+JSON.stringify(request.data)) : false;
+        _DEBUG_MODE ? console.log(0, "Message is received from "+ _from + "(code:"+request.code+")") : false;
 
         let t_data = JSON.stringify(request.data);
         let _data;
@@ -564,10 +581,10 @@ chrome.runtime.onMessage.addListener(
         switch(request.code) {
             case Communication.LOAD_PAGE():
 
-                let url = "http://" + SYSTEM.host + ":" + SYSTEM.port + "/answer_set_manager/test-set/pages?test_set_id="+request.data['test_set_id']+"&index="+request.data['index'];
+                let url = `http://${ SYSTEM.host }:${ SYSTEM.port }/answer_set_manager/test-set/${request.data['test_set_id']}/pages/${request.data['index']}`;
                 let filename = "hyu/" +request.data['test_set_id']+'_'+ request.data['index'] + ".mhtml";
 
-                ajax_request("/answer_set_manager/test-set/pages?test_set_id="+request.data['test_set_id'], "GET", null,"json",
+                ajax_request(url, "GET", null,"json",
                     xhr => {
                         xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
 
@@ -614,7 +631,7 @@ chrome.runtime.onMessage.addListener(
                 break;
 
             case Communication.TEST_SET_PAGE():
-                ajax_request("/answer_set_manager/test-set/pages?test_set_id="+request.data['test_set_id'], "GET", null,"json",
+                ajax_request(`/answer_set_manager/test-set/${request.data['test_set_id']}/pages`, "GET", null,"json",
                     xhr => {
                         xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
 
@@ -630,15 +647,16 @@ chrome.runtime.onMessage.addListener(
 
                 break;
             case Communication.EXTRACTION():
+                _DEBUG_MODE ? console.log(0, "Extraction Process Starting..") : false;
 
                 job = SYSTEM.jobs.find(el => el.id == request.data.job_id);
 
                 if (typeof job == 'undefined') {
-                    console.log("Error 1");
+                    _DEBUG_MODE ? console.log(0, "Error") : false;
 
                     break;
                 }
-                _url = `/answer_set_manager/test-set/pages?test_set_id=${request.data['test_set_id']}`;
+                _url = `/answer_set_manager/test-set/${request.data['test_set_id']}/pages`;
                 ajax_request(_url, "GET", null,"json",
                     xhr => {
                         xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
@@ -653,6 +671,7 @@ chrome.runtime.onMessage.addListener(
 
 
                             _task = new Task(elem.id, elem.protocol, elem.domain, 0);
+                            _task.job = job;
                             job.tasks = _task;
 
                         });
@@ -686,6 +705,7 @@ chrome.runtime.onMessage.addListener(
                         _data.forEach(elem => {
 
                             task = new Task(elem.id, elem.protocol, elem.domain, 0);
+                            task.job = job;
                             task.page = new Page(elem.id, elem.protocol, elem.domain);
                             job.tasks.push(task);
 
@@ -717,9 +737,6 @@ chrome.runtime.onMessage.addListener(
                 break;
             // Status
             case Communication.STATUS():
-
-                console.log(SYSTEM.account);
-
                 ajax_request("/answer_set_manager/answer-set", "GET", null,"json",
                     null,
                     data => {
@@ -750,7 +767,7 @@ chrome.runtime.onMessage.addListener(
 
                     });
 
-                _DEBUG_MODE ? _debug(0, "Message is respond to "+ _from + "(code:"+Communication.STATUS()+")\n"+JSON.stringify(_data)) : false;
+                _DEBUG_MODE ? console.log(0, "Message is respond to "+ _from + "(code:"+Communication.STATUS()) : false;
                 break;
             case Communication.SAVE_PAGE():
                 chrome.tabs.query({active:true}, tabs=> {
@@ -775,7 +792,7 @@ chrome.runtime.onMessage.addListener(
                 break;
             // Login
             case Communication.LOGIN():
-                _DEBUG_MODE ? _debug(0, "Message is sent to Server (code:"+Communication.LOGIN()+")\n"+JSON.stringify(request.data)) : false;
+                _DEBUG_MODE ? console.log(0, "Message is sent to Server (code:"+Communication.LOGIN()+")") : false;
 
                 _data = {
                     grant_type:'password',
@@ -784,7 +801,7 @@ chrome.runtime.onMessage.addListener(
                     password:request.data['password']
                 };
 
-                ajax_request("/api-token-auth/", "POST", _data, "json",
+                ajax_request("/api-token-auth/", "POST", JSON.stringify(_data), "json",
                     function(xhr){
                         // xhr.setRequestHeader ("Authorization", "JWT " + btoa(SYSTEM.client_id + ":" +SYSTEM.client_secret));
 
@@ -814,16 +831,6 @@ chrome.runtime.onMessage.addListener(
         }
     });
 
-
-
-function _debug(_code, _message) {
-
-    let _date = new Date();
-
-    console.log(_code, _date.getHours()+':'+_date.getMinutes()+':'+_date.getSeconds(), _message);
-    // console.log(_code, _date.format('hh:mm:ss'), _message);
-
-}
 
 function ajax_request(path, method, data, dataType, bf_callback, af_callback, er_callback) {
     $.ajax({

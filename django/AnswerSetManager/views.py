@@ -1,4 +1,4 @@
-from Core.models import Site, Page, Answer, AnswerIndex, AnswerSet, TestSetSite, TestSetPage, ContentExtractor, Predict, Node
+from Core.models import Site, Page, Answer, AnswerIndex, TestSet, ContentExtractor, Predict, Node, PredictIndex
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,16 +10,20 @@ from pathlib import Path
 from rest_framework.request import Request
 import json
 
+from inspect import currentframe, getframeinfo
+
+
 
 class TestSetPageAPIView(APIView):
     permission_classes = []
 
-    def get(self, request, test_set_page_id=None):
-
+    def get(self, request, test_set_id=None, test_set_page_id=None):
         if test_set_page_id:
             try:
-                page = TestSetPage.objects.get(id=test_set_page_id).page
-            except TestSetPage.DoesNotExist:
+                pages = TestSet.objects.get(id=test_set_id).pages.all()
+                page = pages.get(id=test_set_page_id)
+
+            except TestSet.pages.DoesNotExist:
                 return HttpResponseNotFound("No file")
 
             if not page.mht_file_path:
@@ -35,15 +39,9 @@ class TestSetPageAPIView(APIView):
                 return HttpResponseNotFound("No file")
 
         else:
-            test_set_sites = TestSetSite.objects.all()
-            if request.GET.get('test_set_id'):
-                test_set_sites.filter(test_set__id=request.GET.get('test_set_id'))
-
-            values = test_set_sites.values_list('id')
-            test_set_pages = TestSetPage.objects.filter(test_set_site__id__in=values).select_related('page')
+            pages = TestSet.objects.get(id=test_set_id).pages.all()
 
             if request.GET.get('index'):
-
                 page = test_set_pages[int(request.GET.get('index'))].page
                 if not page.mht_file_path:
                     return HttpResponseNotFound("No file")
@@ -56,22 +54,31 @@ class TestSetPageAPIView(APIView):
 
             return JsonResponse({
                 'code': 0,
-                'data': [{**model_to_dict(a), **model_to_dict(a.page)} for a in test_set_pages]
+                'data': list(pages.values())
 
             }, safe=False)
 
-    def post(self, request: Request):
+    def post(self, request: Request, test_set_id=None):
         _output = {}
 
-        _data = request.POST.dict()
-        _data['site_id'] = _data.pop('id')
+        _data = request.data.copy()
+        _data.pop('id')
+        # _data['site_id'] = _data.pop('id')
         _nodes = _data.pop('nodes')
         _mhtml = _data.pop('mhtmlData')
 
-        page = Page.objects.create(**_data)
+        test_set = TestSet.objects.get(id=test_set_id)
 
-        test_set_page = TestSetPage.objects.create(page=page, test_set_site_id=request.POST.get('id'))
+        site, created = Site.objects.get_or_create(protocol=_data['protocol'], domain=_data['host'])
+        site.name = _data['title'] if site.name is None else site.name
+        site.save()
 
+        page, created = Page.objects.get_or_create(**_data, site=site)
+
+        if created:
+            print(page)
+
+        test_set.pages.add(page)
         _nodes = json.loads(_nodes)
 
         for _node in _nodes:
@@ -94,30 +101,29 @@ class TestSetPageAPIView(APIView):
 
         return Response(_output)
 
+
 class TestSetSiteAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, test_set_id=None):
         if test_set_id:
 
-            test_set_sites = TestSetSite.objects.filter(test_set_id=test_set_id).select_related('site')
+            # test_set_sites = TestSetSite.objects.filter(test_set_id=test_set_id).select_related('site')
 
-
+            sites = TestSet.objects.get(id=test_set_id).sites.all()
 
             return JsonResponse({
                 'code': 0,
-                'data': [{**model_to_dict(a, exclude=['test_set', 'site']), **model_to_dict(a.site)} for a in test_set_sites]
+                'data': list(sites.values())
 
             }, safe=False)
 
         else:
-            answer_sets = AnswerSet.objects.filter(creator=request.user)
-
-
+            test_sets = TestSet.objects.filter(creator=request.user).values('id', 'name', 'description')
 
             return JsonResponse({
                 'code': 0,
-                'data': [model_to_dict(a) for a in answer_sets]
+                'data': list(test_sets)
 
             }, safe=False)
 
@@ -289,13 +295,13 @@ class ExtractorAPIView(APIView):
 
         _output = {'code': 0}
 
-
-        print(request.data)
-
         if extractor_id:
+            if request.data['readable']:
+                content = request.data.pop('content')
+
             predict = Predict.objects.create(**request.data, content_extractor_id=extractor_id)
-
-
+            if predict.readable:
+                PredictIndex.objects.create(predict=predict, predict_index=content)
 
             return Response(_output)
         else:

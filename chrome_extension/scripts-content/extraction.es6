@@ -7,16 +7,12 @@ chrome.runtime.sendMessage({
 
     };
 
-
     if (response.extractor == 1) {
 
 
-        console.log(document)
 
         let finderJS = new ReaderArticleFinder(document);
         let readable = finderJS.isReaderModeAvailable();
-
-        console.log(finderJS, readable);
 
         _data['readable'] = readable;
 
@@ -35,14 +31,11 @@ chrome.runtime.sendMessage({
 
     }
 
-
-    console.log(_data);
-
-    chrome.runtime.sendMessage(
-        {
-            code: Communication.EXTRACTION_RESPONSE(),
-            data: _data
-        }
-    );
+    // chrome.runtime.sendMessage(
+    //     {
+    //         code: Communication.EXTRACTION_RESPONSE(),
+    //         data: _data
+    //     }
+    // );
 });
 

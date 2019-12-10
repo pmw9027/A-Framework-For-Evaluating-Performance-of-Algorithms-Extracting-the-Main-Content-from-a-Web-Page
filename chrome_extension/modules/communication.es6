@@ -7,23 +7,8 @@ class Communication {
     static LOGIN()              {   return 101; }
     static JOIN()               {   return 103; }
     static LOGOUT()             {   return 102; }
-    static MENU_CONTENT_CHECK() {   return 5;   }
-    static MAIN_CONTENT_SHOW()  {   return 15;  }
-    static MAIN_CONTENT_CHECK() {   return 6;   }
-    static NEXTPAGE()           {   return 4;   }
-    static PREVIOUSPAGE()       {   return 3;   }
-    static GETLIST()            {   return 2;   }
-    static MENU_INITIAL()       {   return 1;   }
-    static SENDING()            {   return 0;   }
     static STATUS()             {   return 10;  }
     static SAVE_PAGE()          {   return 200; }
-
-    static CONTENT_CHECK_MODE()  {   return 300; }
-    static CONTENT_ANSWER()  {   return 301; }
-
-    static ANSWER_CHECK()       {   return 401; }
-
-    static REQUEST_RESOURCE()       {   return 501; }
 
     static JOB_CREATION()          {   return 801; }
 
@@ -34,13 +19,17 @@ class Communication {
     static EXTRACTION()          {   return 1201; }
     static EXTRACTION_QUERY()          {   return 1202; }
     static EXTRACTION_RESPONSE()          {   return 1203; }
+    static EXTRACTION_REQUEST()          {   return 1204; }
 
     static PROCESS_RESULT()          {   return 1301; }
-
 
     static TEST_SET_SITE() {return 701;}
     static TEST_SET_PAGE() {return 1001;}
     static LOAD_PAGE() {return 1101;}
+
+
+    static SAFARI_READER_MODE() {return 1;}
+    static READABILITY() {return 2;}
 
 
     sendToBackground(_code,_data, callback) {

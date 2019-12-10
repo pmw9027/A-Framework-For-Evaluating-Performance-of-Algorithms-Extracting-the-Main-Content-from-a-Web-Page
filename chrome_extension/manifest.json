@@ -30,9 +30,11 @@
         "scripts-content/extractors/Readability.js",
         "scripts-content/extractors/safari-reader.js",
         "scripts-content/PageNode.es6",
-        "scripts-content/WebPage.es6"
+        "scripts-content/WebPage.es6",
+        "scripts-content/content.es6"
+
       ],
-      "run_at": "document_start"
+      "run_at": "document_end"
     }
   ],
   "web_accessible_resources": [
@@ -52,10 +54,17 @@
   ,
   "permissions": [
     "<all_urls>",
+    "webRequest",
     "pageCapture",
     "tabs",
     "downloads",
+    "downloads.open",
     "notifications",
-    "storage"
+    "fileSystem",
+    "storage",
+    "cookies",
+    "sessions",
+    "alarms",
+    "identity"
   ]
 }
