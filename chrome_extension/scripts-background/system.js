@@ -16,9 +16,11 @@ class System{
     }
 
     intialize(callback) {
+
+        this._account = new Account();
+        this._job = [];
+
         chrome.storage.local.set({'token': null}, () => {
-            this._account = new Account();
-            this._job = [];
             callback();
         });
     }

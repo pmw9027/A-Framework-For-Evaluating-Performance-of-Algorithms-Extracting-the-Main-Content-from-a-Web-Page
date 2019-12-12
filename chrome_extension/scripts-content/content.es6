@@ -4,51 +4,68 @@ let _DEBUG_MODE = true;
 
 window.onload = function() {
     _DEBUG_MODE ? console.log(0, "Started function named 'window.onload'") : false;
-    _DEBUG_MODE ? console.log(0, "Initialed valuables") : false;
 
     chrome.runtime.sendMessage({
-        code: Communication.EXTRACTION_QUERY(),
+
+        code: Communication.JOB_QUERY(),
+
+
     }, response => {
 
-        let _data = {};
+
+        switch (response.job_type) {
+            case Job.EXTRACTION():
+                chrome.runtime.sendMessage({
+                    code: Communication.EXTRACTION_QUERY(),
+                }, response => {
+
+                    let _data = {};
+
+                    switch(response.extractor) {
+                        case Communication.SAFARI_READER_MODE():
+
+                            let finderJS = new ReaderArticleFinder(document);
+                            let readable = finderJS.isReaderModeAvailable();
 
 
-        switch(response.extractor) {
-            case Communication.SAFARI_READER_MODE():
+                            break;
+                        case Communication.READABILITY():
+                            let article = new Readability(document).parse();
 
-                let finderJS = new ReaderArticleFinder(document);
-                let readable = finderJS.isReaderModeAvailable();
 
+                            if (article == null) {
+                                _data['readable'] = false
+
+                            }
+                            else {
+                                console.log(article);
+
+                                _data['readable'] = true;
+                                let dom = createElementFromHTML(article.content);
+                                _data['content'] = dom;
+
+                            }
+
+                            break;
+                        default:
+
+                            break;
+                    }
+
+                    chrome.runtime.sendMessage({
+                        code: Communication.EXTRACTION_RESPONSE(),
+                        data: _data
+                    });
+                });
 
                 break;
-            case Communication.READABILITY():
-                let article = new Readability(document).parse();
-
-
-                if (article == null) {
-                    _data['readable'] = false
-
-                }
-                else {
-                    console.log(article);
-
-                    _data['readable'] = true;
-                    let dom = createElementFromHTML(article.content);
-                    _data['content'] = dom;
-
-                }
-
-                break;
-            default:
-
+            case 2:
                 break;
         }
+    });
 
-        chrome.runtime.sendMessage({
-            code: Communication.EXTRACTION_RESPONSE(),
-            data: _data
-        });
-    })
+    _DEBUG_MODE ? console.log(0, "Initialed valuables") : false;
+
 };
 
 function createElementFromHTML(htmlString) {
@@ -68,3 +85,4 @@ function createElementFromHTML(htmlString) {
 
     }
 }
+

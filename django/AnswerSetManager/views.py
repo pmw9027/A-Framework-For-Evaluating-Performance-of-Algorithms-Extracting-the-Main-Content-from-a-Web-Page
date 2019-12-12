@@ -1,4 +1,4 @@
-from Core.models import Site, Page, Answer, AnswerIndex, TestSet, ContentExtractor, Predict, Node, PredictIndex
+from Core.models import Site, Page, Answer, AnswerIndex, TestSet, ContentExtractor, Predict, Node, PredictIndex, NodeName
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,9 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from pathlib import Path
 from rest_framework.request import Request
 import json
-
+from django.db import IntegrityError
 from inspect import currentframe, getframeinfo
-
 
 
 class TestSetPageAPIView(APIView):
@@ -21,9 +20,12 @@ class TestSetPageAPIView(APIView):
         if test_set_page_id:
             try:
                 pages = TestSet.objects.get(id=test_set_id).pages.all()
-                page = pages.get(id=test_set_page_id)
+                page = pages[test_set_page_id]
 
-            except TestSet.pages.DoesNotExist:
+            except TestSet.DoesNotExist:
+                return HttpResponseNotFound("No file")
+
+            except Page.DoesNotExist:
                 return HttpResponseNotFound("No file")
 
             if not page.mht_file_path:
@@ -73,31 +75,33 @@ class TestSetPageAPIView(APIView):
         site.name = _data['title'] if site.name is None else site.name
         site.save()
 
-        page, created = Page.objects.get_or_create(**_data, site=site)
+        try:
+            page, created = Page.objects.get_or_create(**_data, site=site)
+
+        except IntegrityError as e:
+            print(e.args)
+
+            return Response(_output)
 
         if created:
-            print(page)
+            test_set.pages.add(page)
+            _nodes = json.loads(_nodes)
 
-        test_set.pages.add(page)
-        _nodes = json.loads(_nodes)
+            for _node in _nodes:
+                _node = json.loads(_node)
 
-        for _node in _nodes:
-            _node = json.loads(_node)
-            Node.objects.create(**_node, page=page)
+                node_name, created = NodeName.objects.get_or_create(node_name=_node.pop('node_name'))
+                Node.objects.create(**_node, page=page, name=node_name)
 
-        path = f"resources/{page.id}"
-        if not os.path.exists(path):
-            os.makedirs(path)
+            path = f"resources/{page.id}"
+            if not os.path.exists(path):
+                os.makedirs(path)
 
-        with open(f"{path}/page.mhtml", 'wb+') as destination:
-            destination.write(_mhtml.encode('ascii'))
+            with open(f"{path}/page.mhtml", 'wb+') as destination:
+                destination.write(_mhtml.encode('ascii'))
 
-        page.mht_file_path = f"{path}/page.mhtml"
-        page.save()
-
-        _output = {
-
-        }
+            page.mht_file_path = f"{path}/page.mhtml"
+            page.save()
 
         return Response(_output)
 
@@ -297,11 +301,12 @@ class ExtractorAPIView(APIView):
 
         if extractor_id:
             if request.data['readable']:
-                content = request.data.pop('content')
+                hyu = request.data.pop('content')
 
-            predict = Predict.objects.create(**request.data, content_extractor_id=extractor_id)
-            if predict.readable:
-                PredictIndex.objects.create(predict=predict, predict_index=content)
+                if hyu is not None:
+                    predict = Predict.objects.create(**request.data, content_extractor_id=extractor_id)
+                    if predict.readable:
+                        PredictIndex.objects.create(predict=predict, predict_index=hyu)
 
             return Response(_output)
         else:

@@ -38,7 +38,7 @@ class Page(models.Model):
 
 class NodeName(models.Model):
     id = models.AutoField(primary_key=True)
-    # name = models
+    node_name = models.CharField(max_length=50, unique=True)
 
 
 class Node(models.Model):
@@ -47,7 +47,7 @@ class Node(models.Model):
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
     hyu = models.PositiveIntegerField(null=False)
 
-    node_name = models.CharField(max_length=50)
+    name = models.ForeignKey(NodeName, on_delete=models.CASCADE)
 
     offset_top = models.FloatField()
     offset_left = models.FloatField()
@@ -79,7 +79,7 @@ class Node(models.Model):
 
     @property
     def text_ratio(self):
-        return self.width * self.height
+        return self.offset_width * self.offset_height
 
     @property
     def tag_density(self):

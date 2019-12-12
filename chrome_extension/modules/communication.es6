@@ -1,6 +1,5 @@
 class Communication {
 
-
     constructor() {  }
 
     static ISLOGIN()            {   return 100; }
@@ -10,7 +9,8 @@ class Communication {
     static STATUS()             {   return 10;  }
     static SAVE_PAGE()          {   return 200; }
 
-    static JOB_CREATION()          {   return 801; }
+    static JOB_QUERY()          {   return 801; }
+    static JOB_CREATION()          {   return 802; }
 
     static CRAWL_SITE()          {   return 601; }
     static CRAWL_REQUEST()          {   return 602; }
@@ -18,14 +18,21 @@ class Communication {
 
     static EXTRACTION()          {   return 1201; }
     static EXTRACTION_QUERY()          {   return 1202; }
-    static EXTRACTION_RESPONSE()          {   return 1203; }
-    static EXTRACTION_REQUEST()          {   return 1204; }
+    static EXTRACTION_START()          {   return 1203; }
+    static EXTRACTION_RESPONSE()          {   return 1204; }
+    static EXTRACTION_REQUEST()          {   return 1205; }
+
+    static CURATION()          {   return 1401; }
+
+
 
     static PROCESS_RESULT()          {   return 1301; }
 
     static TEST_SET_SITE() {return 701;}
     static TEST_SET_PAGE() {return 1001;}
     static LOAD_PAGE() {return 1101;}
+
+
 
 
     static SAFARI_READER_MODE() {return 1;}

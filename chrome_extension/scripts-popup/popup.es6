@@ -26,8 +26,6 @@ chrome.runtime.onMessage.addListener(
                 elem_total.text(request.data.total);
                 progress_bar.attr("style", `width: ${(request.data.done / request.data.total) * 100}%`);
 
-                console.log(request.data);
-
                 if(parseInt(elem.text()) < request.data.done) {
 
                     $(elem).text(parseInt(request.data.done));
@@ -50,7 +48,7 @@ function display(data) {
         $("#container-nav").removeClass("d-none");
         $("#containver-user").removeClass("d-none");
 
-        let selector = $(".test-set-selector");
+        let selector = $("#test-set-selector");
         selector.empty();
         let option = $('<option disabled selected value>Choose One...</option>');
         selector.append(option);
@@ -76,7 +74,7 @@ function display(data) {
 
     }
 }
-function update() {
+function update(data) {
 
 
     communication.sendToBackground(Communication.STATUS(),null, display);
@@ -124,7 +122,7 @@ window.onload = function() {
 
     });
 
-    $(".test-set-selector").change(event => {
+    $("#test-set-selector").change(event => {
 
         let val = $(event.target).find(":selected").val();
         let _data = {
@@ -154,8 +152,10 @@ window.onload = function() {
         if (0 < result && result < parseInt($(".test-set-page-total-count").text()) + 1) {
             $(".test-set-page-cnt-count").text(result);
 
+
+
             communication.sendToBackground(Communication.LOAD_PAGE(),{
-                'test_set_id': $(".test-set-selector > option:selected").last().val(),
+                'test_set_id': $("#test-set-selector > option:selected").last().val(),
                 'index': result - 1
             }, update);
 
@@ -191,6 +191,23 @@ window.onload = function() {
                 $('#extractor-selector-container').removeClass("d-none");
                 $('#container-flash-button').removeClass("d-none");
                 $('.navbar-brand').text('Curation');
+
+                communication.sendToBackground(Communication.JOB_CREATION(), {
+                    task_id:1,
+                    cnt_tab: 0,
+                    type: Job.CURATION(),
+
+                }, response => {
+
+                    console.log(response);
+
+                    communication.sendToBackground(Communication.CURATION(), {
+
+                        job_id:response.job_id
+
+                    });
+                });
+
                 break;
             case 'nav-extraction':
                 $('#cnt-tab-selector-container').removeClass("d-none");
@@ -233,7 +250,7 @@ window.onload = function() {
             case 'nav-extraction':
                 communication.sendToBackground(Communication.JOB_CREATION(), {
                     task_id:1,
-                    type: 'extraction',
+                    type: Job.EXTRACTION(),
                     test_set_id: selector.val(),
                     cnt_tab: cnt_tab,
                     extractor: extractor,
@@ -253,7 +270,7 @@ window.onload = function() {
             case 'nav-crawl':
                 communication.sendToBackground(Communication.JOB_CREATION(), {
                     task_id:1,
-                    type: 'crawling',
+                    type: Job.CRAWLING(),
                     breadth: breadth,
                     depth: depth,
                     cnt_tab: cnt_tab,

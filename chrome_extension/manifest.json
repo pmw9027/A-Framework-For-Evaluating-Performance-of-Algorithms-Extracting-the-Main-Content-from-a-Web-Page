@@ -27,6 +27,7 @@
         "modules/jquery-3.2.0.min.js",
         "modules/jquery.highlight.js",
         "modules/communication.es6",
+        "modules/Job.es6",
         "scripts-content/extractors/Readability.js",
         "scripts-content/extractors/safari-reader.js",
         "scripts-content/PageNode.es6",
@@ -45,6 +46,7 @@
     "scripts": [
       "modules/jquery-3.2.0.min.js",
       "modules/communication.es6",
+      "modules/Job.es6",
       "scripts-background/system.js",
       "scripts-background/background.es6"
     ],
