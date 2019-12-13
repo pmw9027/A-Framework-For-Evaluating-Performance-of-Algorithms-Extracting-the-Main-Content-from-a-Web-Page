@@ -153,9 +153,11 @@ window.onload = function() {
             $(".test-set-page-cnt-count").text(result);
 
 
+            let extractor = parseInt($("#extractor-selector").val());
 
             communication.sendToBackground(Communication.LOAD_PAGE(),{
                 'test_set_id': $("#test-set-selector > option:selected").last().val(),
+                'extractor_id': extractor,
                 'index': result - 1
             }, update);
 
@@ -219,6 +221,7 @@ window.onload = function() {
 
                 $('#cnt-tab-selector-container').removeClass("d-none");
                 $('#container-evaluation').removeClass("d-none");
+                $('#container-button').removeClass("d-none");
                 $('.navbar-brand').text('Evaluation');
                 break;
 
@@ -288,7 +291,27 @@ window.onload = function() {
 
                     });
                 });
+                break;
+            case 'nav-evaluation':
+                communication.sendToBackground(Communication.JOB_CREATION(), {
+                    task_id:1,
+                    type: Job.EVALUATION(),
+                    breadth: breadth,
+                    depth: depth,
+                    cnt_tab: cnt_tab,
 
+                    test_set_id: selector.val(),
+                    extractor: extractor,
+
+                }, data => {
+                    communication.sendToBackground(Communication.EVALUATION(), {
+                        job_id: data.job_id,
+                        test_set_id: selector.val(),
+                    }, data => {
+
+
+                    });
+                });
 
                 break;
         }

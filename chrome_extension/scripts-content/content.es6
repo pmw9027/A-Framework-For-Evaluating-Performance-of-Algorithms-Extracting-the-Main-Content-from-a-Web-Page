@@ -12,7 +12,6 @@ window.onload = function() {
 
     }, response => {
 
-
         switch (response.job_type) {
             case Job.EXTRACTION():
                 chrome.runtime.sendMessage({
@@ -59,7 +58,30 @@ window.onload = function() {
                 });
 
                 break;
-            case 2:
+            case Job.EVALUATION():
+
+                chrome.runtime.sendMessage({
+                    code: Communication.EVALUATION_QUERY(),
+                }, response => {
+
+                    let _result = [];
+
+                    let answer = $("[hyu='"+523+"'");
+                    let predict = $("[hyu='"+523+"'");
+
+
+                    console.log(answer, predict);
+
+                    let pm = new PerformanceMetric([answer], [predict]);
+                    chrome.runtime.sendMessage({
+                        code:Communication.EVALUATION_RESPONSE(),
+                        data:{
+                            // predict_id:value['_id'],
+                            performances: [pm.words(), pm.textLCS(), pm.basedbyarea()]
+                        }
+                    });
+                });
+
                 break;
         }
     });

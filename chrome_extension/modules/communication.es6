@@ -24,6 +24,11 @@ class Communication {
 
     static CURATION()          {   return 1401; }
 
+    static EVALUATION()          {   return 1501; }
+    static EVALUATION_QUERY()          {   return 1502; }
+    static EVALUATION_START()          {   return 1503; }
+    static EVALUATION_RESPONSE()          {   return 1504; }
+
 
 
     static PROCESS_RESULT()          {   return 1301; }

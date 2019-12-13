@@ -3,6 +3,7 @@ class Job {
     static EXTRACTION()            {   return 100; }
     static CRAWLING()              {   return 101; }
     static CURATION()              {   return 102; }
+    static EVALUATION()              {   return 103; }
 
     constructor(cnt_tab, depth, breadth) {
 
@@ -92,6 +93,12 @@ class Job {
 
 
         }
+        else if (this.type == Job.EVALUATION()) {
+
+            _DEBUG_MODE ? console.log(0, "Extraction Job Started..") : false;
+            chrome.downloads.onChanged.addListener((this.onDownloadListener).bind(this));
+
+        }
 
         else if (this.type == Job.CURATION()) {
 
@@ -164,6 +171,22 @@ class Job {
 
                     });
                 }
+
+                else if (this.type == Job.EVALUATION()) {
+
+                    let _url = `http://${SYSTEM.host}:${SYSTEM.port}/answer_set_manager/test-set/${_tab.task.job.test_set_id}/pages/${_tab.task.id}`;
+
+                    chrome.downloads.download({
+                        url: _url,
+                        filename: `hyu/${_tab.task.id}.mhtml`
+                    }, downloadId => {
+
+                        _tab.task.downloadId = downloadId;
+
+
+                    });
+                }
+
             }
         }
     }
@@ -189,6 +212,12 @@ class Job {
 
                 });
 
+                break;
+            case Communication.EVALUATION_QUERY():
+                sendResponse({
+                    // extractor: this.extractor
+
+                });
                 break;
             case Communication.EXTRACTION_QUERY():
                 sendResponse({
@@ -288,8 +317,6 @@ class Job {
                         );
 
 
-                        console.log(request.data.page.depth, this._depth, request.data.urls.pathname);
-
                         if (request.data.page.depth < this._depth) {
                             let _task = null;
                             for (const pathname of request.data.urls.pathname) {
@@ -364,14 +391,7 @@ class Job {
 
             if (this.type == Job.EXTRACTION()) {
 
-                chrome.runtime.sendMessage(
-                    {
-                        code:Communication.EXTRACTION_START(),
-                        data: {
 
-                        }
-                    }
-                );
             }
             else if (this.type == Job.CRAWLING()) {
                 chrome.tabs.executeScript(tab.id,
@@ -391,6 +411,9 @@ class Job {
                         );
                     }
                 );
+            }
+            else if (this.type == Job.EVALUATION()) {
+
             }
         }
     }

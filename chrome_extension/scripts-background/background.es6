@@ -227,9 +227,51 @@ chrome.runtime.onMessage.addListener(
         let _res;
         let job;
         let tab;
-        let _url = null;
-        
+
+        let _url = '';
+
         switch(request.code) {
+            case Communication.EVALUATION():
+
+                ajax_request(`/answer_set_manager/test-set/${request.data['test_set_id']}/pages`, "GET", null,"json",
+                    null,
+                    data => {
+                        job = SYSTEM.jobs.find(el => el.id == request.data.job_id);
+
+                        let _data = data['data'];
+                        let _task = null;
+                        _data.forEach(elem => {
+
+                            _task = new Task(elem.id, elem.protocol, elem.domain, 0);
+                            _task.job = job;
+                            job.tasks = _task;
+
+                        });
+
+                        job.start();
+
+                        sendResponse({
+                            data: _data
+                        });
+
+                    },
+                    null
+                );
+
+                break;
+            case Communication.EVALUATION_RESPONSE():
+
+
+                ajax_request(`/answer_set_manager/test-set/${request.data['test_set_id']}/pages`, "POST", request.data,"json",
+                    null,
+                    data => {
+
+                    },
+                    null
+                );
+
+
+                break;
             case Communication.LOAD_PAGE():
 
                 // let url = `http://${ SYSTEM.host }:${ SYSTEM.port }/answer_set_manager/test-set/${request.data['test_set_id']}/pages/${request.data['index']}`;
@@ -250,7 +292,6 @@ chrome.runtime.onMessage.addListener(
                 job = SYSTEM.jobs.find(el => el.id == request.data.job_id);
                 job.start();
 
-
                 break;
             case Communication.JOB_CREATION():
                 job = new Job(request.data.cnt_tab, request.data.depth, request.data.breadth);
@@ -258,8 +299,6 @@ chrome.runtime.onMessage.addListener(
                 job.type = request.data['type'];
                 job.extractor = request.data['extractor'];
                 SYSTEM.push_job(job);
-
-
 
                 sendResponse({
                     data: {

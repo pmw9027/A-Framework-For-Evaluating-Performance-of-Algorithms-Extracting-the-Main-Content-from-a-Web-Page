@@ -1,4 +1,4 @@
-from Core.models import Site, Page, Answer, AnswerIndex, TestSet, ContentExtractor, Predict, Node, PredictIndex, NodeName
+from Core.models import Site, Page, Answer, AnswerIndex, TestSet, ContentExtractor, Predict, Node, PredictIndex, NodeName, PerformanceEvaluationResult, PerformanceMetric
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -17,10 +17,11 @@ class TestSetPageAPIView(APIView):
     permission_classes = []
 
     def get(self, request, test_set_id=None, test_set_page_id=None):
-        if test_set_page_id:
+
+        if test_set_page_id is not None:
             try:
                 pages = TestSet.objects.get(id=test_set_id).pages.all()
-                page = pages[test_set_page_id]
+                page = pages.get(id=test_set_page_id)
 
             except TestSet.DoesNotExist:
                 return HttpResponseNotFound("No file")
@@ -313,10 +314,26 @@ class ExtractorAPIView(APIView):
             pass
 
 
+class EvaluationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
 
 
+            return JsonResponse({
+                'data': []
 
+            }, safe=False)
 
+    def post(self, request):
+
+        _data = request.data.copy()
+
+        per = PerformanceEvaluationResult.objects.create(**_data)
+
+        return Response({
+
+        })
 
 
 
