@@ -50,7 +50,7 @@ function display(data) {
 
         let selector = $("#test-set-selector");
         selector.empty();
-        let option = $('<option disabled selected value>Choose One...</option>');
+        let option = $('<option disabled selected value="-1">Choose One...</option>');
         selector.append(option);
 
 
@@ -178,6 +178,10 @@ window.onload = function() {
         $('#cnt-tab-selector-container').addClass("d-none");
         $('#container-flash-button').addClass("d-none");
 
+
+        $("#test-set-selector").val("-1").trigger('change');
+        $("#extractor-selector").val("-1").trigger('change');
+
         switch(this.id) {
             case 'nav-crawl':
                 $('.navbar-brand').text('Crawling');
@@ -219,6 +223,7 @@ window.onload = function() {
                 break;
             case 'nav-evaluation':
 
+                $('#extractor-selector-container').removeClass("d-none");
                 $('#cnt-tab-selector-container').removeClass("d-none");
                 $('#container-evaluation').removeClass("d-none");
                 $('#container-button').removeClass("d-none");
