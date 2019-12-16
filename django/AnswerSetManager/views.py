@@ -1,4 +1,7 @@
-from Core.models import Site, Page, Answer, AnswerIndex, TestSet, ContentExtractor, Predict, Node, PredictIndex, NodeName, PerformanceEvaluationResult, PerformanceMetric
+from Core.models import Site, Page, Answer, AnswerIndex, TestSet, Node, NodeName
+from Extractor.models import PredictIndex, Predict, ContentExtractor
+
+
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -16,20 +19,25 @@ from inspect import currentframe, getframeinfo
 class TestSetPageAPIView(APIView):
     permission_classes = []
 
-    def get(self, request, test_set_id=None, test_set_page_id=None):
+    def get(self, request, test_set_id=None, test_set_page_ind=None):
 
-        if test_set_page_id is not None:
+        if test_set_page_ind is not None:
             try:
                 pages = TestSet.objects.get(id=test_set_id).pages.all()
-                page = pages.get(id=test_set_page_id)
+                page = pages[test_set_page_ind]
 
-            except TestSet.DoesNotExist:
+            except TestSet.DoesNotExist as e:
+
+                print(getframeinfo(currentframe()).lineno, e)
                 return HttpResponseNotFound("No file")
 
-            except Page.DoesNotExist:
+            except Page.DoesNotExist as e:
+                print(getframeinfo(currentframe()).lineno, e)
+
                 return HttpResponseNotFound("No file")
 
             if not page.mht_file_path:
+
                 return HttpResponseNotFound("No file")
 
             path = Path(page.mht_file_path)
@@ -178,7 +186,7 @@ class PageList(APIView):
 
         test_set_site = TestSetSite.objects.get(id=request.POST.get('id'))
 
-        page = Page.objects.create(site=test_set_site.site, url=request.POST.get('url'), title=request.POST.get('title'))
+        page = Page.objects.get_or_create(site=test_set_site.site, url=request.POST.get('url'), title=request.POST.get('title'))
         test_set_page = TestSetPage.objects.create(page=page, test_set_site=test_set_site)
 
         path = f"resources/{page.id}"
@@ -198,7 +206,6 @@ class PageList(APIView):
         return Response(_output)
 
 
-
 class AnswerPage(APIView):
     # permission_classes = [permissions.IsAuthenticated, TokenHasReadWriteScope]
     permission_classes = []
@@ -213,7 +220,6 @@ class AnswerPage(APIView):
 
             if request.GET.get('mine'):
                 objts = Answer.objects.filter(answer_checker=user)
-
             web_page = objts.values('answer_number')
             _output['data'] = [entry for entry in web_page]
             response = JsonResponse(_output, safe=False)
@@ -304,10 +310,9 @@ class ExtractorAPIView(APIView):
             if request.data['readable']:
                 hyu = request.data.pop('content')
 
-                if hyu is not None:
-                    predict = Predict.objects.create(**request.data, content_extractor_id=extractor_id)
-                    if predict.readable:
-                        PredictIndex.objects.create(predict=predict, predict_index=hyu)
+            predict = Predict.objects.create(**request.data, content_extractor_id=extractor_id)
+            if predict.readable:
+                PredictIndex.objects.create(predict=predict, predict_index=hyu)
 
             return Response(_output)
         else:

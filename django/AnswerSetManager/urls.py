@@ -34,7 +34,7 @@ urlpatterns = [
     path('test-set/pages/<int:test_set_page_id>', TestSetPageAPIView.as_view()),
     path('test-set/<int:test_set_id>', TestSetSiteAPIView.as_view()),
     path('test-set/<int:test_set_id>/pages', TestSetPageAPIView.as_view()),
-    path('test-set/<int:test_set_id>/pages/<int:test_set_page_id>', TestSetPageAPIView.as_view()),
+    path('test-set/<int:test_set_id>/pages/<int:test_set_page_ind>', TestSetPageAPIView.as_view()),
 
     path('test-set/sites', TestSetSiteAPIView.as_view()),
     # path('test-set/sites/<int:test_set_id>', AnswerSetAPIView.as_view()),

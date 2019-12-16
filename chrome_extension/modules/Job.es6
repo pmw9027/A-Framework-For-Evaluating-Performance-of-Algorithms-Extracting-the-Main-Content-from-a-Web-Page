@@ -213,6 +213,35 @@ class Job {
                 });
 
                 break;
+            case Communication.CURATION_QUERY():
+
+                ajax_request(_url, 'GET',
+                    "json",
+                    null,
+                    response => {
+                        _DEBUG_MODE ? console.log(0, "Sent a Message to Server") : false;
+                        _tab.status = 'done';
+                        clearTimeout(_tab.timeout);
+                        this.run();
+                        _DEBUG_MODE ? console.log(0, "Task Ran") : false;
+
+                        this._tasks_cnt_done += 1;
+                        chrome.runtime.sendMessage(
+                            {
+                                code:Communication.PROCESS_RESULT(),
+                                data: {
+                                    total: this._tasks_cnt_total,
+                                    done: this._tasks_cnt_done,
+                                    error: this._tasks_cnt_error,
+                                }
+                            }
+                        );
+                    },
+                    null,
+                );
+
+
+                break;
             case Communication.EVALUATION_QUERY():
                 sendResponse({
                     // extractor: this.extractor
@@ -390,6 +419,11 @@ class Job {
             _DEBUG_MODE ? console.log(0, "Content Load Completely") : false;
 
             if (this.type == Job.EXTRACTION()) {
+
+
+            }
+            else if (this.type == Job.CURATION()) {
+
 
 
             }

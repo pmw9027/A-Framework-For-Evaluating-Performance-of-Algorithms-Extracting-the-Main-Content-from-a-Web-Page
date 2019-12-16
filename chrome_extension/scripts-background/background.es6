@@ -213,8 +213,43 @@ tabs_id = [];
 ACCOUNT = new Account();
 SYSTEM = new System();
 
+
 _DEBUG_MODE ? console.log(0, "Global valuables are initialed") : false;
 
+let port_content = null;
+let port_popup = null;
+chrome.runtime.onConnect.addListener(function(port) {
+    _DEBUG_MODE ? console.log(0, "A port is connected (port.name: "+port.name+")") : false;
+    switch (port.name) {
+        case Communication.CURATION_PORT_POPUP():
+            port_popup = port;
+            break;
+        case Communication.CURATION_PORT_CONTENT():
+            port_content = port;
+            break;
+
+    }
+
+    port.onMessage.addListener(function(msg) {
+        _DEBUG_MODE ? console.log(0, "A message is received from a port (port.name: "+port.name+")") : false;
+
+        switch(port.name) {
+            case Communication.CURATION_PORT_POPUP():
+
+                switch (msg.command) {
+
+                }
+
+                port_content.postMessage({command: Communication.CURATION_FLASH()});
+                break;
+            case Communication.CURATION_PORT_CONTENT():
+
+                port.postMessage({answer: "Madame2"});
+                break;
+
+        }
+    });
+});
 
 chrome.runtime.onMessage.addListener(
     (request, sender, sendResponse) => {
@@ -229,6 +264,9 @@ chrome.runtime.onMessage.addListener(
         let tab;
 
         let _url = '';
+
+
+
 
         switch(request.code) {
             case Communication.EVALUATION():
@@ -335,8 +373,7 @@ chrome.runtime.onMessage.addListener(
 
                     break;
                 }
-                _url = `/answer_set_manager/test-set/${request.data['test_set_id']}/pages`;
-                ajax_request(_url, "GET", null,"json",
+                ajax_request(`/answer_set_manager/test-set/${request.data['test_set_id']}/pages`, "GET", null,"json",
                     xhr => {
                         xhr.setRequestHeader("Authorization", "JWT "+SYSTEM.account.token);
 

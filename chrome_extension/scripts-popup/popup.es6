@@ -1,4 +1,4 @@
-let _DEBUG_MODE = false;
+let _DEBUG_MODE = true;
 let tab;
 _DEBUG_MODE ? _debug(0, "Popup script started") : false;
 
@@ -82,6 +82,13 @@ function update(data) {
 
 window.onload = function() {
 
+    let port = chrome.runtime.connect({name: Communication.CURATION_PORT_POPUP()});
+    port.onMessage.addListener(function(msg) {
+
+        console.log(msg);
+
+    });
+
     update();
 
     $("#login-button").on("click", function() {
@@ -140,10 +147,9 @@ window.onload = function() {
 
     });
     $("#flash-button").on("click", function(event) {
-        parseInt($("#extractor-selector").val())
+        parseInt($("#extractor-selector").val());
 
-
-
+        port.postMessage({command: Communication.CURATION_FLASH()});
 
     });
     $("#button_left, #button_right").on("click", function(event) {

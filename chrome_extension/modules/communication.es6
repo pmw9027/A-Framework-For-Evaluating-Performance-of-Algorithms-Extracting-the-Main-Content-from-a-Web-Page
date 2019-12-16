@@ -23,6 +23,10 @@ class Communication {
     static EXTRACTION_REQUEST()          {   return 1205; }
 
     static CURATION()          {   return 1401; }
+    static CURATION_PORT_CONTENT()          {   return "1400"; }
+    static CURATION_PORT_POPUP()          {   return "-1400"; }
+    static CURATION_QUERY()          {   return 1402; }
+    static CURATION_FLASH()          {   return 1403; }
 
     static EVALUATION()          {   return 1501; }
     static EVALUATION_QUERY()          {   return 1502; }

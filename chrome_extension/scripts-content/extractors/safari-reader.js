@@ -3374,6 +3374,5 @@ ReaderArticleFinder = function(e) {
   }
 };
 
-// var ReaderArticleFinderJS = new ReaderArticleFinder(document);
-// var article = ReaderArticleFinderJS.articleNode();
-// return article;
+var ReaderArticleFinderJS = new ReaderArticleFinder(document);
+var article = ReaderArticleFinderJS.articleNode();

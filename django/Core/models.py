@@ -105,25 +105,6 @@ class TestSet(models.Model):
         return self.name
 
 
-class ContentExtractor(models.Model):
-    name = models.CharField(max_length=50)
-    description = models.TextField(null=True, blank=True)
-
-
-class Predict(models.Model):
-    id = models.AutoField(primary_key=True)
-    page = models.ForeignKey(Page, on_delete=models.CASCADE)
-    content_extractor = models.ForeignKey('ContentExtractor', on_delete=models.CASCADE)
-    readable = models.BooleanField(default=False)
-
-    class Meta:
-        unique_together = [['page', 'content_extractor']]
-
-
-class PredictIndex(models.Model):
-    predict = models.ForeignKey(Predict, on_delete=models.CASCADE)
-    predict_index = models.PositiveIntegerField()
-
 
 class Answer(models.Model):
     id = models.AutoField(primary_key=True)
@@ -136,31 +117,31 @@ class AnswerIndex(models.Model):
     answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
     answer_index = models.PositiveIntegerField()
 
-
-class PerformanceMetric(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
-    description = models.TextField(null=True, blank=True)
-
-
-class PerformanceEvaluationResult(models.Model):
-    id = models.AutoField(primary_key=True)
-    predict = models.ForeignKey(Predict, on_delete=models.CASCADE)
-    performance_metric = models.ForeignKey(PerformanceMetric, on_delete=models.CASCADE)
-
-    precision = models.FloatField(default=None, null=True)
-    recall = models.FloatField(default=None, null=True)
-
-    class Meta:
-        unique_together = [['predict', 'performance_metric']]
-
-    @property
-    def f1(self):
-        if self.precision is None or self. recall is None:
-            return None
-        elif self.recall + self.precision == 0:
-            return 0.0
-        else:
-            return (2 * self.precision * self. recall) / (self.recall + self.precision)
+#
+# class PerformanceMetric(models.Model):
+#     id = models.AutoField(primary_key=True)
+#     name = models.CharField(max_length=100)
+#     description = models.TextField(null=True, blank=True)
+#
+#
+# class PerformanceEvaluationResult(models.Model):
+#     id = models.AutoField(primary_key=True)
+#     predict = models.ForeignKey('Predict', on_delete=models.CASCADE)
+#     performance_metric = models.ForeignKey(PerformanceMetric, on_delete=models.CASCADE)
+#
+#     precision = models.FloatField(default=None, null=True)
+#     recall = models.FloatField(default=None, null=True)
+#
+#     class Meta:
+#         unique_together = [['predict', 'performance_metric']]
+#
+#     @property
+#     def f1(self):
+#         if self.precision is None or self. recall is None:
+#             return None
+#         elif self.recall + self.precision == 0:
+#             return 0.0
+#         else:
+#             return (2 * self.precision * self. recall) / (self.recall + self.precision)
 
 
