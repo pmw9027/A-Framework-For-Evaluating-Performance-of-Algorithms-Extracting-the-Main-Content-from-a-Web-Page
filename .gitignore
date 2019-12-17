@@ -4,4 +4,4 @@
 venv
 Server/config.yaml
 django/resources
-*.sql
+*.sqlite
