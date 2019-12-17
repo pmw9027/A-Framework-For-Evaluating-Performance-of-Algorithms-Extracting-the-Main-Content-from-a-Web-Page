@@ -2,6 +2,8 @@ class Communication {
 
     constructor() {  }
 
+    static PORT_POPUP()            {   return "PORT POPUP"; }
+
     static ISLOGIN()            {   return 100; }
     static LOGIN()              {   return 101; }
     static JOIN()               {   return 103; }
@@ -21,12 +23,14 @@ class Communication {
     static EXTRACTION_START()          {   return 1203; }
     static EXTRACTION_RESPONSE()          {   return 1204; }
     static EXTRACTION_REQUEST()          {   return 1205; }
+    static EXTRACTION_PORT_POPUP()          {   return "DONE"; }
 
     static CURATION()          {   return 1401; }
     static CURATION_PORT_CONTENT()          {   return "1400"; }
     static CURATION_PORT_POPUP()          {   return "-1400"; }
     static CURATION_QUERY()          {   return 1402; }
     static CURATION_FLASH()          {   return 1403; }
+    static CURATION_DELETE()          {   return 1404; }
 
     static EVALUATION()          {   return 1501; }
     static EVALUATION_QUERY()          {   return 1502; }

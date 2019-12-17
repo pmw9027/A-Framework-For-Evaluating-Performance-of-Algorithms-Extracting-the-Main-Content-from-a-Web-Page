@@ -1,10 +1,10 @@
 from django.db import models
-from Core.models import Page
 
 
 class ContentExtractor(models.Model):
     name = models.CharField(max_length=50, unique=True)
     description = models.TextField(null=True, blank=True)
+    performance = models.ManyToManyField('Evaluation.PerformanceMetric', through='Evaluation.PerformanceEvaluationResult')
 
     def __str__(self):
         return self.name
@@ -13,18 +13,13 @@ class ContentExtractor(models.Model):
 class Predict(models.Model):
 
     id = models.AutoField(primary_key=True)
-    page = models.ForeignKey(Page, on_delete=models.CASCADE)
-    content_extractor = models.ForeignKey('ContentExtractor', on_delete=models.CASCADE)
+    page = models.ForeignKey('Core.Page', related_name='test', on_delete=models.SET_NULL, null=True)
+    content_extractor = models.ForeignKey(ContentExtractor, related_name='extractor', on_delete=models.SET_NULL, null=True)
     readable = models.BooleanField(default=False)
+    indices = models.ManyToManyField('Core.Node', blank=True)
 
     class Meta:
-        unique_together = [['page', 'content_extractor']]
+        unique_together = [['content_extractor', 'page']]
 
     def __str__(self):
         return f'{self.page} {self.content_extractor}'
-
-
-
-class PredictIndex(models.Model):
-    predict = models.ForeignKey(Predict, on_delete=models.CASCADE)
-    predict_index = models.PositiveIntegerField()

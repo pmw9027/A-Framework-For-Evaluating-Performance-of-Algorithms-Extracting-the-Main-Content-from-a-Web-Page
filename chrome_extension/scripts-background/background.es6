@@ -12,11 +12,12 @@ class Task {
         this._domain = domain;
         this._depth = depth;
         this._test_set_id = null;
-        this._page = new Page(id, protocol, domain, '1');
+        this._page = null;
         this._downloadId = null;
 
         this._extractor = null;
     }
+
 
     get job() {
         return this._job;
@@ -214,42 +215,40 @@ ACCOUNT = new Account();
 SYSTEM = new System();
 
 
-_DEBUG_MODE ? console.log(0, "Global valuables are initialed") : false;
-
 let port_content = null;
 let port_popup = null;
+
+
+_DEBUG_MODE ? console.log(0, "Port Listener is on") : false;
 chrome.runtime.onConnect.addListener(function(port) {
     _DEBUG_MODE ? console.log(0, "A port is connected (port.name: "+port.name+")") : false;
     switch (port.name) {
-        case Communication.CURATION_PORT_POPUP():
+        case Communication.PORT_POPUP():
+            port_popup.onMessage.removeListener(listener);
             port_popup = port;
+            port_popup.onMessage.addListener(listener);
             break;
-        case Communication.CURATION_PORT_CONTENT():
-            port_content = port;
-            break;
-
     }
 
-    port.onMessage.addListener(function(msg) {
+    function listener(msg) {
         _DEBUG_MODE ? console.log(0, "A message is received from a port (port.name: "+port.name+")") : false;
-
         switch(port.name) {
             case Communication.CURATION_PORT_POPUP():
-
                 switch (msg.command) {
+
 
                 }
 
                 port_content.postMessage({command: Communication.CURATION_FLASH()});
                 break;
-            case Communication.CURATION_PORT_CONTENT():
-
-                port.postMessage({answer: "Madame2"});
-                break;
 
         }
-    });
+    }
 });
+
+
+_DEBUG_MODE ? console.log(0, "Global valuables are initialed") : false;
+
 
 chrome.runtime.onMessage.addListener(
     (request, sender, sendResponse) => {
@@ -266,8 +265,6 @@ chrome.runtime.onMessage.addListener(
         let _url = '';
 
 
-
-
         switch(request.code) {
             case Communication.EVALUATION():
 
@@ -278,9 +275,9 @@ chrome.runtime.onMessage.addListener(
 
                         let _data = data['data'];
                         let _task = null;
-                        _data.forEach(elem => {
+                        _data.forEach((elem, index) => {
 
-                            _task = new Task(elem.id, elem.protocol, elem.domain, 0);
+                            _task = new Task(index, elem.protocol, elem.domain, 0);
                             _task.job = job;
                             job.tasks = _task;
 
@@ -300,7 +297,7 @@ chrome.runtime.onMessage.addListener(
             case Communication.EVALUATION_RESPONSE():
 
 
-                ajax_request(`/answer_set_manager/test-set/${request.data['test_set_id']}/pages`, "POST", request.data,"json",
+                ajax_request(`/answer_set_manager/test-set/${request.data['test_set_id']}/pages`, "POST", JSON.stringify(request.data),"json",
                     null,
                     data => {
 
@@ -346,7 +343,6 @@ chrome.runtime.onMessage.addListener(
                 });
 
                 break;
-
             case Communication.TEST_SET_PAGE():
                 ajax_request(`/answer_set_manager/test-set/${request.data['test_set_id']}/pages`, "GET", null,"json",
                     xhr => {
@@ -382,9 +378,10 @@ chrome.runtime.onMessage.addListener(
 
                         let _data = data['data'];
                         let _task = null;
-                        _data.forEach(elem => {
+                        _data.forEach((elem, index) => {
 
-                            _task = new Task(elem.id, elem.protocol, elem.domain, 0);
+                            _task = new Task(index, elem.protocol, elem.domain, 0);
+                            _task.page = new Page(elem.id, elem.protocol, elem.domain);
                             _task.job = job;
                             job.tasks = _task;
 
@@ -449,7 +446,6 @@ chrome.runtime.onMessage.addListener(
                     null
                 );
                 break;
-            // Status
             case Communication.STATUS():
                 ajax_request("/answer_set_manager/answer-set", "GET", null,"json",
                     null,
@@ -504,7 +500,6 @@ chrome.runtime.onMessage.addListener(
 
                 sendResponse({});
                 break;
-            // Login
             case Communication.LOGIN():
                 _DEBUG_MODE ? console.log(0, "Message is sent to Server (code:"+Communication.LOGIN()+")") : false;
 

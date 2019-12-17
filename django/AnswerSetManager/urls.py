@@ -42,6 +42,6 @@ urlpatterns = [
     path('extractors', ExtractorAPIView.as_view()),
     path('extractors/<int:extractor_id>', ExtractorAPIView.as_view()),
 
-    path('evaluation/', EvaluationAPIView.as_view()),
+    path('evaluation/test-set/<int:test_set_id>/pages/<int:test_set_page_ind>', EvaluationAPIView.as_view()),
 
 ]

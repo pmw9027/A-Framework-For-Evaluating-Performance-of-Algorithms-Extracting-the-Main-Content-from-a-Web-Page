@@ -95,7 +95,7 @@ class Job {
         }
         else if (this.type == Job.EVALUATION()) {
 
-            _DEBUG_MODE ? console.log(0, "Extraction Job Started..") : false;
+            _DEBUG_MODE ? console.log(0, "EVALUATION Job Started..") : false;
             chrome.downloads.onChanged.addListener((this.onDownloadListener).bind(this));
 
         }
@@ -103,12 +103,11 @@ class Job {
         else if (this.type == Job.CURATION()) {
 
 
-            _DEBUG_MODE ? console.log(0, "Extraction Job Started..") : false;
+            _DEBUG_MODE ? console.log(0, "CURATION Job Started..") : false;
             chrome.downloads.onChanged.addListener((this.onDownloadListener).bind(this));
 
 
         }
-
 
         for (const i of Array(this._tabs.length).keys()) {
 
@@ -130,7 +129,6 @@ class Job {
         }
         else {
             if (this._tasks.length == 0) {
-
                 console.log("Empty the list of task");
                 _tab = this.tabs.find(el => el.status == 'running');
                 if (!_tab) {
@@ -140,7 +138,7 @@ class Job {
                 }
             }
             else {
-                _tab.task = this._tasks.pop();
+                _tab.task = this._tasks.shift();
 
                 let _timeout_var = setTimeout(() => {
                     _tab.status = 'expired';
@@ -148,7 +146,7 @@ class Job {
                 }, 15000);
                 _tab.timeout = _timeout_var;
 
-                if (this.type == Job.EXTRACTION()) {
+                if (this.type == Job.EXTRACTION() || this.type == Job.EVALUATION()) {
                     _DEBUG_MODE ? console.log(0, "One Task of Extraction Ran") : false;
 
                     let _url = `http://${SYSTEM.host}:${SYSTEM.port}/answer_set_manager/test-set/${_tab.task.job.test_set_id}/pages/${_tab.task.id}`;
@@ -171,22 +169,6 @@ class Job {
 
                     });
                 }
-
-                else if (this.type == Job.EVALUATION()) {
-
-                    let _url = `http://${SYSTEM.host}:${SYSTEM.port}/answer_set_manager/test-set/${_tab.task.job.test_set_id}/pages/${_tab.task.id}`;
-
-                    chrome.downloads.download({
-                        url: _url,
-                        filename: `hyu/${_tab.task.id}.mhtml`
-                    }, downloadId => {
-
-                        _tab.task.downloadId = downloadId;
-
-
-                    });
-                }
-
             }
         }
     }
@@ -207,9 +189,9 @@ class Job {
         let _data;
         switch (request.code) {
             case Communication.JOB_QUERY():
+                _DEBUG_MODE ? console.log(0, "Received a Message(code: Job_Query)") : false;
                 sendResponse({
                     job_type: this.type
-
                 });
 
                 break;
@@ -242,11 +224,38 @@ class Job {
 
 
                 break;
-            case Communication.EVALUATION_QUERY():
-                sendResponse({
-                    // extractor: this.extractor
+            case Communication.EVALUATION_RESPONSE():
+                _tab  = this.tabs.find(el => el.id === sender.tab.id);
+                ajax_request(`/answer_set_manager/evaluation/test-set/${_tab.task.job.test_set_id}/pages/${_tab.task.id}`, 'POST',
+                    JSON.stringify(request.data),
+                    "json",
+                    null,
+                    response => {
+                        _DEBUG_MODE ? console.log(0, "Sent a Message to Server") : false;
 
-                });
+                        sendResponse({
+
+                        });
+                    },
+                    null,
+                );
+
+                break;
+            case Communication.EVALUATION_QUERY():
+                _tab  = this.tabs.find(el => el.id === sender.tab.id);
+
+                ajax_request(`/answer_set_manager/evaluation/test-set/${_tab.task.job.test_set_id}/pages/${_tab.task.id}`, 'GET',
+                    null,
+                    "json",
+                    null,
+                    response => {
+                        _DEBUG_MODE ? console.log(0, "Sent a Message to Server") : false;
+
+                        sendResponse(response.data);
+                    },
+                    null,
+                );
+
                 break;
             case Communication.EXTRACTION_QUERY():
                 sendResponse({
@@ -257,16 +266,13 @@ class Job {
             case Communication.EXTRACTION_RESPONSE():
                 _DEBUG_MODE ? console.log(0, `Received a Message`) : false;
 
-
                 _tab  = this.tabs.find(el => el.id === sender.tab.id);
                 _url = `/answer_set_manager/extractors/${this.extractor}`;
                 _data = {
-                    'page_id':_tab.task.page.id,
-                    'readable':request.data.readable,
-                    'content':request.data.content,
-
+                    page_id:_tab.task.page.id,
+                    readable:request.data.readable,
+                    content:request.data.content,
                 };
-
 
                 ajax_request(_url, 'POST',
                     JSON.stringify(_data),
@@ -351,6 +357,7 @@ class Job {
                             for (const pathname of request.data.urls.pathname) {
 
                                 _task = new Task(1, pathname.protocol, request.data.urls.host+pathname.pathname, request.data.page.depth + 1);
+                                _task.page = new Page();
                                 _task.job = _tab.task.job;
 
                                 this.tasks.push(_task);
@@ -372,7 +379,10 @@ class Job {
                         clearTimeout(_tab.timeout);
                         _tab.status = 'done';
 
-                        // Need of Process
+                        port.postMessage({
+                            code: Communication.EXTRACTION_PORT_POPUP(),
+                            data: this._tasks_cnt_done++
+                        });
 
                         this.run();
 
@@ -394,7 +404,7 @@ class Job {
 
                     let tab = this.tabs.find(el => el.task.downloadId == downloadDelta.id && el.task != null);
 
-                    let _id = null
+                    let _id = null;
 
                     if (this.type == Job.CURATION()){
 

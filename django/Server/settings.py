@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'Core',
     'Extractor',
+    'Evaluation',
     'PerformanceEvaluator',
     'rest_framework'
 

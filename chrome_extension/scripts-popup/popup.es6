@@ -1,6 +1,6 @@
 let _DEBUG_MODE = true;
 let tab;
-_DEBUG_MODE ? _debug(0, "Popup script started") : false;
+// _DEBUG_MODE ? _debug(0, "Popup script started") : false;
 
 
 let communication = new Communication();
@@ -82,11 +82,17 @@ function update(data) {
 
 window.onload = function() {
 
-    let port = chrome.runtime.connect({name: Communication.CURATION_PORT_POPUP()});
+    let port = chrome.runtime.connect({name: Communication.PORT_POPUP()});
+
     port.onMessage.addListener(function(msg) {
 
-        console.log(msg);
+        switch(msg.code) {
+            case Communication.EXTRACTION_PORT_POPUP():
 
+                $(".progress-done-count").text(msg.data);
+                break;
+
+        }
     });
 
     update();
@@ -146,12 +152,33 @@ window.onload = function() {
         });
 
     });
-    $("#flash-button").on("click", function(event) {
+    $("#flash-button, #button-delete, #button-move").on("click", function(event) {
         parseInt($("#extractor-selector").val());
 
-        port.postMessage({command: Communication.CURATION_FLASH()});
+        console.log(event.target.id);
+        switch (event.target.id) {
+            case "button-move":
+                let result = parseInt($('#move-page-no').val());
+                if (0 < result && result < parseInt($(".test-set-page-total-count").text()) + 1) {
+                    $(".test-set-page-cnt-count").text(result);
+                    communication.sendToBackground(Communication.LOAD_PAGE(),{
+                        'test_set_id': $("#test-set-selector > option:selected").last().val(),
+                        'index': result - 1
+                    }, update);
+                }
+                break;
+            case "button-delete":
+                port.postMessage({command: Communication.CURATION_DELETE()});
 
+                break;
+            case "flash-button":
+                port.postMessage({command: Communication.CURATION_FLASH()});
+
+
+                break;
+        }
     });
+
     $("#button_left, #button_right").on("click", function(event) {
 
         let result = parseInt($(".test-set-page-cnt-count").text()) + parseInt(event.target.getAttribute('value'));
@@ -178,18 +205,22 @@ window.onload = function() {
         $(event.target).addClass("active");
         $('#container-button').addClass("d-none");
         $('#container-moving-page').addClass("d-none");
+        $('#container-moving-page2').addClass("d-none");
         $('#depth-input-container').addClass("d-none");
         $('#breadth-input-container').addClass("d-none");
         $('#extractor-selector-container').addClass("d-none");
         $('#cnt-tab-selector-container').addClass("d-none");
         $('#container-flash-button').addClass("d-none");
-
+        $('#container-done-pages').addClass("d-none");
+        $('#container-process').addClass("d-none");
+        $('#progress').addClass("d-none");
 
         $("#test-set-selector").val("-1").trigger('change');
         $("#extractor-selector").val("-1").trigger('change');
 
         switch(this.id) {
             case 'nav-crawl':
+                $('#container-done-pages').removeClass("d-none");
                 $('.navbar-brand').text('Crawling');
                 $('#depth-input-container').removeClass("d-none");
                 $('#breadth-input-container').removeClass("d-none");
@@ -198,11 +229,14 @@ window.onload = function() {
 
                 break;
             case 'nav-curation':
+
                 $('#container-button').addClass("d-none");
                 $('#container-moving-page').removeClass("d-none");
                 $('#extractor-selector-container').removeClass("d-none");
                 $('#container-flash-button').removeClass("d-none");
                 $('.navbar-brand').text('Curation');
+                $('#container-moving-page2').removeClass("d-none");
+
 
                 communication.sendToBackground(Communication.JOB_CREATION(), {
                     task_id:1,
@@ -222,13 +256,16 @@ window.onload = function() {
 
                 break;
             case 'nav-extraction':
+                $('#progress').removeClass("d-none");
+                $('#container-process').removeClass("d-none");
                 $('#cnt-tab-selector-container').removeClass("d-none");
                 $('#extractor-selector-container').removeClass("d-none");
                 $('#container-button').removeClass("d-none");
                 $('.navbar-brand').text('Extraction');
                 break;
             case 'nav-evaluation':
-
+                $('#progress').removeClass("d-none");
+                $('#container-process').removeClass("d-none");
                 $('#extractor-selector-container').removeClass("d-none");
                 $('#cnt-tab-selector-container').removeClass("d-none");
                 $('#container-evaluation').removeClass("d-none");
@@ -328,16 +365,6 @@ window.onload = function() {
         }
     });
 };
-
-
-function _debug(_code, _message) {
-
-    let _date = new Date();
-
-    console.log(_code, _date.getHours()+':'+_date.getMinutes()+':'+_date.getSeconds(), _message);
-    // console.log(_code, _date.format('hh:mm:ss'), _message);
-
-}
 
 
 const POPUPCOMMAND = {

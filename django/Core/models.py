@@ -10,13 +10,14 @@ class Site(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
-        return self.name if self.name else self.domain
+        return f'{"%5d " % self.id} {self.name}' if self.name else f'{"%5d " % self.id} {self.domain}'
 
     class Meta:
         unique_together = [['protocol', 'domain']]
 
 
 class Page(models.Model):
+
     id = models.AutoField(primary_key=True)
     site = models.ForeignKey(Site, on_delete=models.SET_NULL, null=True)
 
@@ -31,6 +32,7 @@ class Page(models.Model):
     created = models.DateTimeField(auto_now_add=True, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)
     mht_file_path = models.FilePathField(null=True, path=settings.FILE_PATH_FIELD_DIRECTORY)
+    predicts = models.ManyToManyField('Extractor.ContentExtractor', through='Extractor.Predict')
 
     class Meta:
         unique_together = [['protocol', 'host', 'pathname']]
@@ -44,14 +46,13 @@ class NodeName(models.Model):
 class Node(models.Model):
 
     id = models.AutoField(primary_key=True)
+
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
+
     hyu = models.PositiveIntegerField(null=False)
-
     name = models.ForeignKey(NodeName, on_delete=models.CASCADE)
-
     offset_top = models.FloatField()
     offset_left = models.FloatField()
-
     offset_width = models.FloatField()
     offset_height = models.FloatField()
 
@@ -98,12 +99,11 @@ class TestSet(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
-    sites = models.ManyToManyField(Site)
+    sites = models.ManyToManyField(Site, blank=True)
     pages = models.ManyToManyField(Page, blank=True)
 
     def __str__(self):
         return self.name
-
 
 
 class Answer(models.Model):
@@ -111,37 +111,12 @@ class Answer(models.Model):
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
     checker = models.ForeignKey(User, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
+    indices = models.ManyToManyField(Node, blank=True)
 
 
 class AnswerIndex(models.Model):
     answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
     answer_index = models.PositiveIntegerField()
 
-#
-# class PerformanceMetric(models.Model):
-#     id = models.AutoField(primary_key=True)
-#     name = models.CharField(max_length=100)
-#     description = models.TextField(null=True, blank=True)
-#
-#
-# class PerformanceEvaluationResult(models.Model):
-#     id = models.AutoField(primary_key=True)
-#     predict = models.ForeignKey('Predict', on_delete=models.CASCADE)
-#     performance_metric = models.ForeignKey(PerformanceMetric, on_delete=models.CASCADE)
-#
-#     precision = models.FloatField(default=None, null=True)
-#     recall = models.FloatField(default=None, null=True)
-#
-#     class Meta:
-#         unique_together = [['predict', 'performance_metric']]
-#
-#     @property
-#     def f1(self):
-#         if self.precision is None or self. recall is None:
-#             return None
-#         elif self.recall + self.precision == 0:
-#             return 0.0
-#         else:
-#             return (2 * self.precision * self. recall) / (self.recall + self.precision)
 
 

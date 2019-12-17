@@ -1,5 +1,5 @@
 from Core.models import Site, Page, Answer, AnswerIndex, TestSet, Node, NodeName
-from Extractor.models import PredictIndex, Predict, ContentExtractor
+from Extractor.models import ContentExtractor, Predict
 
 
 from django.http import JsonResponse, FileResponse, HttpResponseNotFound, HttpResponse
@@ -20,24 +20,22 @@ class TestSetPageAPIView(APIView):
     permission_classes = []
 
     def get(self, request, test_set_id=None, test_set_page_ind=None):
-
         if test_set_page_ind is not None:
             try:
+
                 pages = TestSet.objects.get(id=test_set_id).pages.all()
                 page = pages[test_set_page_ind]
 
             except TestSet.DoesNotExist as e:
-
                 print(getframeinfo(currentframe()).lineno, e)
                 return HttpResponseNotFound("No file")
 
             except Page.DoesNotExist as e:
                 print(getframeinfo(currentframe()).lineno, e)
-
                 return HttpResponseNotFound("No file")
 
             if not page.mht_file_path:
-
+                print(getframeinfo(currentframe()).lineno, 'No MHTML file')
                 return HttpResponseNotFound("No file")
 
             path = Path(page.mht_file_path)
@@ -47,6 +45,7 @@ class TestSetPageAPIView(APIView):
                 return file_reponse
 
             else:
+                print(getframeinfo(currentframe()).lineno, 'No MHTML file')
                 return HttpResponseNotFound("No file")
 
         else:
@@ -305,14 +304,17 @@ class ExtractorAPIView(APIView):
     def post(self, request, extractor_id=None):
 
         _output = {'code': 0}
-
         if extractor_id:
-            if request.data['readable']:
-                hyu = request.data.pop('content')
+            page_id = request.data.pop('page_id')
+            predict = Predict.objects.create(content_extractor_id=extractor_id, page_id=page_id, readable=request.data.pop('readable'))
 
-            predict = Predict.objects.create(**request.data, content_extractor_id=extractor_id)
             if predict.readable:
-                PredictIndex.objects.create(predict=predict, predict_index=hyu)
+                try:
+                    predict.indices.add(Node.objects.get(hyu=request.data.pop('content'), page_id=page_id))
+                except Node.DoesNotExist:
+
+                    predict.delete()
+                    return Response(_output)
 
             return Response(_output)
         else:
@@ -322,19 +324,26 @@ class ExtractorAPIView(APIView):
 class EvaluationAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request, test_set_id=None, test_set_page_ind=None):
 
+        page = TestSet.objects.get(id=test_set_id).pages.all()[test_set_page_ind]
 
-            return JsonResponse({
-                'data': []
+        return JsonResponse({
+            'data': {
+                'answers': [] if len(page.predict_set.all()) == 0 else [i.hyu for i in page.answer_set.first().indices.all()],
+                'predicts': [] if len(page.predict_set.all()) == 0 else {i.content_extractor.id: [j.hyu for j in i.indices.all()] for i in page.predict_set.all()}
+            }
+        }, safe=False)
 
-            }, safe=False)
+    def post(self, request, test_set_id=None, test_set_page_ind=None):
+        page = TestSet.objects.get(id=test_set_id).pages.all()[test_set_page_ind]
 
-    def post(self, request):
-
-        _data = request.data.copy()
-
-        per = PerformanceEvaluationResult.objects.create(**_data)
+        for key in request.data:
+            for dic in request.data[key]:
+                try:
+                    page.predict_set.get(content_extractor_id=key).performanceevaluationresult_set.create(**dic)
+                except IntegrityError as e:
+                    print(getframeinfo(currentframe()).lineno, e)
 
         return Response({
 

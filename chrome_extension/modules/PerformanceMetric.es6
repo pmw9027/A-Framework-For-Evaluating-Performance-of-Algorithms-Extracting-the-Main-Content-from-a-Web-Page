@@ -109,8 +109,6 @@ class PerformanceMetric {
                     p_words_list += predict[0].textContent.match(/\b(\w+)\b/g);
 
             });
-            console.log(a_words_list);
-            console.log(p_words_list);
             if(a_words_list.length > 12000 || p_words_list.length > 12000)
                 return false;
 
@@ -146,45 +144,47 @@ class PerformanceMetric {
             let total_answer_area = 0, total_predict_area = 0, total_common_area = 0;
 
             this.answers.forEach(answer => {
-                let a_right = answer[0].getBoundingClientRect().right;
-                let a_left = answer[0].getBoundingClientRect().left;
-                let a_top = answer[0].getBoundingClientRect().top;
-                let a_bottom = answer[0].getBoundingClientRect().bottom;
-                let answer_width = a_right - a_left;
-                let answer_height = a_bottom - a_top;
-                total_answer_area += answer_width * answer_height;
+                if (answer[0] !== undefined) {
+                    let a_right = answer[0].getBoundingClientRect().right;
+                    let a_left = answer[0].getBoundingClientRect().left;
+                    let a_top = answer[0].getBoundingClientRect().top;
+                    let a_bottom = answer[0].getBoundingClientRect().bottom;
+                    let answer_width = a_right - a_left;
+                    let answer_height = a_bottom - a_top;
+                    total_answer_area += answer_width * answer_height;
 
-                this.predicts.forEach(predict => {
-                    if (answer[0]&& predict[0]){
+                    this.predicts.forEach(predict => {
+                        if (answer[0]&& predict[0]){
 
 
-                        let p_right = predict[0].getBoundingClientRect().right;
-                        let p_left = predict[0].getBoundingClientRect().left;
-                        let p_top = predict[0].getBoundingClientRect().top;
-                        let p_bottom = predict[0].getBoundingClientRect().bottom;
+                            let p_right = predict[0].getBoundingClientRect().right;
+                            let p_left = predict[0].getBoundingClientRect().left;
+                            let p_top = predict[0].getBoundingClientRect().top;
+                            let p_bottom = predict[0].getBoundingClientRect().bottom;
 
-                        let predict_width = p_right - p_left;
-                        let predict_height = p_bottom - p_top;
-                        total_predict_area += predict_width * predict_height;
+                            let predict_width = p_right - p_left;
+                            let predict_height = p_bottom - p_top;
+                            total_predict_area += predict_width * predict_height;
 
-                        if (!(a_right < p_left || a_left > p_left || a_bottom < p_top || a_top > p_bottom)) {
+                            if (!(a_right < p_left || a_left > p_left || a_bottom < p_top || a_top > p_bottom)) {
 
-                            let a = a_left > p_left ? a_left : p_left;
-                            let b = a_right < p_right ? a_right : p_right;
+                                let a = a_left > p_left ? a_left : p_left;
+                                let b = a_right < p_right ? a_right : p_right;
 
-                            let c = b - a;
+                                let c = b - a;
 
-                            let d = a_top > p_top ? a_top : p_top;
-                            let e = a_bottom < p_bottom ? a_bottom : p_bottom;
+                                let d = a_top > p_top ? a_top : p_top;
+                                let e = a_bottom < p_bottom ? a_bottom : p_bottom;
 
-                            let f = e - d;
+                                let f = e - d;
 
-                            let g = c * f;
-                            total_common_area += g;
+                                let g = c * f;
+                                total_common_area += g;
 
+                            }
                         }
-                    }
-                })
+                    })
+                }
             });
 
 
@@ -204,5 +204,14 @@ class PerformanceMetric {
             }
 
         }
+    }
+
+    get result() {
+
+        return [
+            this.words(),
+            this.textLCS(),
+            this.basedbyarea(),
+        ]
     }
 }
